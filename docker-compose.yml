@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: bridge_mongodb
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - bridge_net
+
+  ganache:
+    image: trufflesuite/ganache:latest
+    container_name: bridge_ganache
+    restart: unless-stopped
+    ports:
+      - '8545:8545'
+    command: >
+      --miner.blockTime 1
+      --wallet.totalAccounts 10
+      --wallet.defaultBalance 1000
+      --chain.networkId 1337
+      --chain.chainId 1337
+    networks:
+      - bridge_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bridge_backend
+    restart: unless-stopped
+    ports:
+      - '5000:5000'
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongodb:27017/bridge_db
+      - JWT_SECRET=bridge_super_secret_jwt_key_production_2026_x789
+      - JWT_EXPIRES_IN=7d
+      - GANACHE_RPC_URL=http://ganache:8545
+      - CLIENT_URL=http://localhost
+    depends_on:
+      - mongodb
+      - ganache
+    networks:
+      - bridge_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bridge_frontend
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    depends_on:
+      - backend
+    networks:
+      - bridge_net
+
+volumes:
+  mongodb_data:
+
+networks:
+  bridge_net:
+    driver: bridge

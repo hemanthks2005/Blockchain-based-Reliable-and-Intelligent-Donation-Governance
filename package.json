@@ -1,0 +1,27 @@
+{
+  "name": "bridge-monorepo",
+  "version": "1.0.0",
+  "description": "BRIDGE — Blockchain-based Reliable and Intelligent Donation Governance Engine",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node dev.js",
+    "dev:backend": "npm --prefix backend run start",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "seed": "npm --prefix backend run seed",
+    "build": "npm --prefix frontend run build",
+    "lint": "npm --prefix backend run lint"
+  },
+  "keywords": [
+    "blockchain",
+    "solidity",
+    "react",
+    "node",
+    "express",
+    "mongodb",
+    "donations",
+    "governance"
+  ],
+  "author": "BRIDGE Team",
+  "license": "MIT"
+}
