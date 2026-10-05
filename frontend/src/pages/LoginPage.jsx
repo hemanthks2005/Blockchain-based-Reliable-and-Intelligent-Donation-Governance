@@ -2,19 +2,31 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, ROLES } from '../context/AuthContext';
 import { BridgeLogo } from '../components/common/BridgeLogo';
+import { API_URL } from '../services/api';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, switchRole } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(location.state?.error || null);
+  const [isNetworkError, setIsNetworkError] = useState(false);
 
   const from = location.state?.from?.pathname;
+
+  const navigateAfterLogin = (role) => {
+    let targetPath = from;
+    if (!targetPath || targetPath === '/login' || targetPath === '/register') {
+      if (role === ROLES.ADMIN) targetPath = '/admin';
+      else if (role === ROLES.BENEFICIARY) targetPath = '/beneficiary';
+      else targetPath = '/donor';
+    }
+    navigate(targetPath, { replace: true });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,28 +38,45 @@ export function LoginPage() {
     try {
       setLoading(true);
       setError(null);
+      setIsNetworkError(false);
       const res = await login(email, password);
-
-      let targetPath = from;
-      if (!targetPath || targetPath === '/login' || targetPath === '/register') {
-        const userRole = res.user?.role;
-        if (userRole === ROLES.ADMIN) targetPath = '/admin';
-        else if (userRole === ROLES.BENEFICIARY) targetPath = '/beneficiary';
-        else targetPath = '/donor';
-      }
-
-      navigate(targetPath, { replace: true });
+      navigateAfterLogin(res.user?.role);
     } catch (err) {
-      setError(err.message || 'Invalid credentials. Please try again.');
+      const msg = err.message || '';
+      if (msg.includes('Failed to fetch') || err.name === 'TypeError') {
+        setIsNetworkError(true);
+        setError('Cannot connect to the backend server (Failed to fetch).');
+      } else {
+        setIsNetworkError(false);
+        setError(msg || 'Invalid credentials. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const fillDemoAccount = (demoEmail) => {
+  const handleDemoBypass = (preferredRole) => {
+    let targetRole = preferredRole;
+    if (!targetRole) {
+      if (email.toLowerCase().includes('admin')) targetRole = ROLES.ADMIN;
+      else if (email.toLowerCase().includes('beneficiary')) targetRole = ROLES.BENEFICIARY;
+      else targetRole = ROLES.DONOR;
+    }
+    switchRole(targetRole);
+    navigateAfterLogin(targetRole);
+  };
+
+  const fillDemoAccount = (demoEmail, demoRole) => {
     setEmail(demoEmail);
     setPassword('StrongPassword123');
     setError(null);
+    setIsNetworkError(false);
+  };
+
+  const getTargetDemoRole = () => {
+    if (email.toLowerCase().includes('admin')) return 'Admin';
+    if (email.toLowerCase().includes('beneficiary')) return 'Beneficiary';
+    return 'Donor';
   };
 
   return (
@@ -86,13 +115,38 @@ export function LoginPage() {
                 backgroundColor: 'var(--accent-rose-light)',
                 border: '1px solid var(--accent-rose-border)',
                 color: 'var(--accent-rose)',
-                padding: '10px 14px',
+                padding: '12px 14px',
                 borderRadius: 'var(--radius-sm)',
                 fontSize: '0.85rem',
                 marginBottom: '20px',
+                lineHeight: 1.5,
               }}
             >
-              ⚠ {error}
+              <div style={{ fontWeight: 600 }}>⚠ {error}</div>
+              {isNetworkError && (
+                <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--accent-rose-border)', color: 'var(--text-dark)' }}>
+                  <p style={{ margin: '0 0 10px 0', fontSize: '0.78rem', color: '#475569' }}>
+                    The backend at <code>{API_URL}</code> is unreachable on this device.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleDemoBypass()}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: 'var(--primary-color)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      fontWeight: 600,
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🚀 Enter in Demo Mode as {getTargetDemoRole()}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
