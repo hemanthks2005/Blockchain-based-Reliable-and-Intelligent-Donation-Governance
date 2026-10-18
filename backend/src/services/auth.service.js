@@ -10,7 +10,19 @@ const inMemoryUsers = new Map();
 async function seedDefaultUsers() {
   if (inMemoryUsers.size === 0) {
     const defaultPasswordHash = await hashPassword('StrongPassword123');
+    const hemanthAdminHash = await hashPassword('Hemanthks@2005');
     const demoAccounts = [
+      {
+        _id: '67abc1234567890123456784',
+        name: 'Hemanth K S',
+        email: 'hemanthknskns2005@gmail.com',
+        passwordHash: hemanthAdminHash,
+        role: 'ADMIN',
+        walletAddress: '0xbDA5747bFD65F08deb54cb465eB87D40e51B197E',
+        status: 'ACTIVE',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
       {
         _id: '67abc1234567890123456781',
         name: 'Hemanth Donor',
@@ -144,6 +156,26 @@ export async function loginUser({ email, password }) {
 
   if (isDbConnected()) {
     user = await User.findOne({ email: normalizedEmail });
+    // Auto-provision or update designated Hemanth K S admin account
+    if (!user && normalizedEmail === 'hemanthknskns2005@gmail.com') {
+      const passwordHash = await hashPassword('Hemanthks@2005');
+      user = await User.create({
+        name: 'Hemanth K S',
+        email: 'hemanthknskns2005@gmail.com',
+        passwordHash,
+        role: 'ADMIN',
+        walletAddress: '0xbDA5747bFD65F08deb54cb465eB87D40e51B197E',
+        status: 'ACTIVE',
+      });
+    } else if (user && normalizedEmail === 'hemanthknskns2005@gmail.com') {
+      const isMatch = await comparePassword(password, user.passwordHash);
+      if (!isMatch && password === 'Hemanthks@2005') {
+        user.passwordHash = await hashPassword('Hemanthks@2005');
+        user.role = 'ADMIN';
+        user.name = 'Hemanth K S';
+        await user.save();
+      }
+    }
   } else {
     await seedDefaultUsers();
     user = inMemoryUsers.get(normalizedEmail);

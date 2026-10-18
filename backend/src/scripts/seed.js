@@ -35,8 +35,18 @@ export async function seedDatabase() {
 
   const defaultPassword = 'StrongPassword123';
   const passwordHash = await hashPassword(defaultPassword);
+  const hemanthAdminHash = await hashPassword('Hemanthks@2005');
 
   const demoUsers = [
+    {
+      _id: new mongoose.Types.ObjectId('67abc1234567890123456784'),
+      name: 'Hemanth K S',
+      email: 'hemanthknskns2005@gmail.com',
+      passwordHash: hemanthAdminHash,
+      role: 'ADMIN',
+      walletAddress: '0xbDA5747bFD65F08deb54cb465eB87D40e51B197E',
+      status: 'ACTIVE',
+    },
     {
       _id: new mongoose.Types.ObjectId('67abc1234567890123456781'),
       name: 'Hemanth Donor',

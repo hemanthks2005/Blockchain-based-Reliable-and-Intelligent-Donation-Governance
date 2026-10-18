@@ -228,29 +228,28 @@ export function RegisterPage() {
                 <label className="bridge-label">
                   Select Your Account Role <span style={{ color: 'var(--accent-rose)' }}>*</span>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
                   {[
                     { id: ROLES.DONOR, label: 'Donor', icon: '💖' },
                     { id: ROLES.BENEFICIARY, label: 'Beneficiary', icon: '🤝' },
-                    { id: ROLES.ADMIN, label: 'Admin', icon: '⚡' },
                   ].map((r) => (
                     <button
                       key={r.id}
                       type="button"
                       onClick={() => setFormData((p) => ({ ...p, role: r.id }))}
                       style={{
-                        padding: '10px 4px',
+                        padding: '11px 8px',
                         borderRadius: 'var(--radius-md)',
                         border: `1.5px solid ${formData.role === r.id ? 'var(--primary-green)' : 'var(--border-light)'}`,
                         backgroundColor: formData.role === r.id ? 'var(--primary-green-light)' : '#ffffff',
                         color: formData.role === r.id ? 'var(--primary-green)' : 'var(--text-muted)',
                         fontWeight: 700,
-                        fontSize: '0.85rem',
+                        fontSize: '0.9rem',
                         transition: 'all 0.2s',
                         boxShadow: formData.role === r.id ? '0 2px 8px rgba(5, 150, 105, 0.15)' : 'none',
                       }}
                     >
-                      <span style={{ marginRight: '4px' }}>{r.icon}</span>
+                      <span style={{ marginRight: '6px' }}>{r.icon}</span>
                       {r.label}
                     </button>
                   ))}
