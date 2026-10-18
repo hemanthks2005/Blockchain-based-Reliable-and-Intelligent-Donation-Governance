@@ -4,3 +4,4 @@ export { FundRequest } from './FundRequest.js';
 export { Donation } from './Donation.js';
 export { Transaction } from './Transaction.js';
 export { AuditLog } from './AuditLog.js';
+export { GovernanceDispute } from './GovernanceDispute.js';

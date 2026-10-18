@@ -42,8 +42,56 @@ function seedDefaultBeneficiary() {
       updatedAt: new Date(),
     };
 
+    const waterBeneficiary = {
+      _id: '67abc1234567890123456793',
+      userId: '67abc1234567890123456786',
+      name: 'Water4All Global',
+      description: 'Sustainable clean drinking water well projects and solar purification for remote villages',
+      contactEmail: 'info@water4all.org',
+      contactPhone: '+91 94455 66778',
+      verificationStatus: 'VERIFIED',
+      verificationRemarks: 'Clean water engineering blueprints and NGO registration audited',
+      verifiedBy: '67abc1234567890123456783',
+      verifiedAt: new Date(Date.now() - 10 * 86400000),
+      createdAt: new Date(Date.now() - 25 * 86400000),
+      updatedAt: new Date(),
+    };
+
+    const schoolsBeneficiary = {
+      _id: '67abc1234567890123456794',
+      userId: '67abc1234567890123456787',
+      name: 'BrightFuture Rural Schools',
+      description: 'Modernizing classroom infrastructure, solar power, and digital computer labs in rural schools',
+      contactEmail: 'connect@brightfuture.org',
+      contactPhone: '+91 93322 11009',
+      verificationStatus: 'VERIFIED',
+      verificationRemarks: 'State educational accreditation and NGO documentation verified',
+      verifiedBy: '67abc1234567890123456783',
+      verifiedAt: new Date(Date.now() - 5 * 86400000),
+      createdAt: new Date(Date.now() - 18 * 86400000),
+      updatedAt: new Date(),
+    };
+
+    const foodBeneficiary = {
+      _id: '67abc1234567890123456795',
+      userId: '67abc1234567890123456788',
+      name: 'Annapurna Food Relief',
+      description: 'Providing daily hot nutritious meals and emergency food supplies to vulnerable children and senior citizens',
+      contactEmail: 'contact@annapurnarelief.org',
+      contactPhone: '+91 97788 99001',
+      verificationStatus: 'PENDING_VERIFICATION',
+      verificationRemarks: null,
+      verifiedBy: null,
+      verifiedAt: null,
+      createdAt: new Date(Date.now() - 2 * 86400000),
+      updatedAt: new Date(),
+    };
+
     inMemoryBeneficiaries.set(demoBeneficiary._id, demoBeneficiary);
     inMemoryBeneficiaries.set(pendingBeneficiary._id, pendingBeneficiary);
+    inMemoryBeneficiaries.set(waterBeneficiary._id, waterBeneficiary);
+    inMemoryBeneficiaries.set(schoolsBeneficiary._id, schoolsBeneficiary);
+    inMemoryBeneficiaries.set(foodBeneficiary._id, foodBeneficiary);
   }
 }
 

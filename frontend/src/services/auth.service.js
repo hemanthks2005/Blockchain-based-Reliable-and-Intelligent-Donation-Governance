@@ -57,6 +57,28 @@ export async function fetchMe(token) {
 }
 
 /**
+ * Update authenticated user profile
+ * @param {string} token
+ * @param {object} profileData
+ */
+export async function updateProfile(token, profileData) {
+  const res = await fetch(`${AUTH_URL}/profile`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(profileData),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error?.message || data.message || 'Failed to update profile');
+  }
+  return data.data.user;
+}
+
+/**
  * Logout from backend
  * @param {string} token 
  */
@@ -73,3 +95,4 @@ export async function logout(token) {
     // Ignore network errors during logout
   }
 }
+

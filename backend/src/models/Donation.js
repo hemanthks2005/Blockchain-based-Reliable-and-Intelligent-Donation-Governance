@@ -52,7 +52,21 @@ const donationSchema = new mongoose.Schema(
     },
     currency: {
       type: String,
-      default: 'ETH',
+      default: 'INR',
+    },
+    paymentMethod: {
+      type: String,
+      default: 'RAZORPAY',
+    },
+    razorpayOrderId: {
+      type: String,
+      default: null,
+      sparse: true,
+    },
+    razorpayPaymentId: {
+      type: String,
+      default: null,
+      sparse: true,
     },
     status: {
       type: String,
@@ -63,6 +77,7 @@ const donationSchema = new mongoose.Schema(
         'CONFIRMED',
         'ALLOCATED',
         'COMPLETED',
+        'REFUNDED',
         'FAILED',
         'CANCELLED',
       ],

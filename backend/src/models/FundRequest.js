@@ -68,6 +68,27 @@ const fundRequestSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    reportCount: {
+      type: Number,
+      default: 0,
+    },
+    isFrozen: {
+      type: Boolean,
+      default: false,
+    },
+    freezeReason: {
+      type: String,
+      default: null,
+    },
+    frozenAt: {
+      type: Date,
+      default: null,
+    },
+    refundStatus: {
+      type: String,
+      enum: ['NONE', 'INITIATED', 'COMPLETED'],
+      default: 'NONE',
+    },
   },
   {
     timestamps: true,

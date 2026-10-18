@@ -6,6 +6,7 @@ import requestRoutes from './request.routes.js';
 import blockchainRoutes from './blockchain.routes.js';
 import donationRoutes from './donation.routes.js';
 import adminRoutes from './admin.routes.js';
+import governanceRoutes from './governance.routes.js';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use('/requests', requestRoutes);
 router.use('/blockchain', blockchainRoutes);
 router.use('/donations', donationRoutes);
 router.use('/admin', adminRoutes);
+router.use('/governance', governanceRoutes);
 
 // Meta index route
 router.get('/', (req, res) => {

@@ -30,6 +30,16 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    phone: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    bio: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     status: {
       type: String,
       enum: ['ACTIVE', 'INACTIVE', 'SUSPENDED'],

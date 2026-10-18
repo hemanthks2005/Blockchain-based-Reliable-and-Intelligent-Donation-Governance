@@ -14,4 +14,6 @@ export const config = {
   contractAddress: process.env.CONTRACT_ADDRESS || '',
   blockchainPrivateKey: process.env.BLOCKCHAIN_PRIVATE_KEY || '',
   chainId: parseInt(process.env.CHAIN_ID || '1337', 10),
+  razorpayKeyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_TpHSB9BBWmAuow',
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET || 'hWjT9sws4mMe7EbQiouPBQNN',
 };

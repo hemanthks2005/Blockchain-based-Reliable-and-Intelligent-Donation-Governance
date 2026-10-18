@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { User } from '../models/User.js';
+import { Beneficiary } from '../models/Beneficiary.js';
 import { hashPassword, comparePassword, generateToken } from '../utils/auth.js';
 import { logger } from '../utils/logger.js';
 
@@ -186,6 +187,8 @@ export async function loginUser({ email, password }) {
       email: user.email,
       role: user.role,
       walletAddress: user.walletAddress || null,
+      phone: user.phone || '',
+      bio: user.bio || '',
       status: user.status || 'ACTIVE',
     },
   };
@@ -201,6 +204,8 @@ export async function getUserById(id) {
       email: user.email,
       role: user.role,
       walletAddress: user.walletAddress,
+      phone: user.phone || '',
+      bio: user.bio || '',
       status: user.status,
       createdAt: user.createdAt,
     };
@@ -213,11 +218,124 @@ export async function getUserById(id) {
           email: u.email,
           role: u.role,
           walletAddress: u.walletAddress,
+          phone: u.phone || '',
+          bio: u.bio || '',
           status: u.status,
           createdAt: u.createdAt,
         };
       }
     }
     return null;
+  }
+}
+
+export async function updateUserProfile(userId, { name, email, walletAddress, phone, bio }) {
+  const normalizedEmail = email ? email.toLowerCase().trim() : undefined;
+
+  if (isDbConnected()) {
+    const user = await User.findById(userId);
+    if (!user) {
+      const error = new Error('User account not found.');
+      error.statusCode = 404;
+      error.code = 'USER_NOT_FOUND';
+      throw error;
+    }
+
+    if (normalizedEmail && normalizedEmail !== user.email) {
+      const existing = await User.findOne({ email: normalizedEmail });
+      if (existing && existing._id.toString() !== userId.toString()) {
+        const error = new Error('This email is already associated with another account.');
+        error.statusCode = 409;
+        error.code = 'EMAIL_ALREADY_IN_USE';
+        throw error;
+      }
+      user.email = normalizedEmail;
+    }
+
+    if (name && name.trim()) user.name = name.trim();
+    if (walletAddress !== undefined) user.walletAddress = walletAddress ? walletAddress.trim() : null;
+    if (phone !== undefined) user.phone = phone.trim();
+    if (bio !== undefined) user.bio = bio.trim();
+
+    await user.save();
+
+    // If role is BENEFICIARY, sync beneficiary profile
+    if (user.role === 'BENEFICIARY') {
+      try {
+        const ben = await Beneficiary.findOne({ userId: user._id });
+        if (ben) {
+          if (name && name.trim()) ben.name = name.trim();
+          if (user.email) ben.contactEmail = user.email;
+          if (phone !== undefined) ben.contactPhone = phone.trim();
+          if (bio !== undefined) ben.description = bio.trim();
+          await ben.save();
+        }
+      } catch (err) {
+        logger.warn(`Could not sync beneficiary profile: ${err.message}`);
+      }
+    }
+
+    return {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      walletAddress: user.walletAddress,
+      phone: user.phone || '',
+      bio: user.bio || '',
+      status: user.status,
+      updatedAt: user.updatedAt,
+    };
+  } else {
+    await seedDefaultUsers();
+    let foundUser = null;
+    let oldEmailKey = null;
+
+    for (const [key, u] of inMemoryUsers.entries()) {
+      const currentId = u._id ? u._id.toString() : u.id ? u.id.toString() : null;
+      if (currentId === userId.toString()) {
+        foundUser = u;
+        oldEmailKey = key;
+        break;
+      }
+    }
+
+    if (!foundUser) {
+      const error = new Error('User account not found.');
+      error.statusCode = 404;
+      error.code = 'USER_NOT_FOUND';
+      throw error;
+    }
+
+    if (normalizedEmail && normalizedEmail !== foundUser.email) {
+      if (inMemoryUsers.has(normalizedEmail)) {
+        const error = new Error('This email is already associated with another account.');
+        error.statusCode = 409;
+        error.code = 'EMAIL_ALREADY_IN_USE';
+        throw error;
+      }
+      inMemoryUsers.delete(oldEmailKey);
+      foundUser.email = normalizedEmail;
+    }
+
+    if (name && name.trim()) foundUser.name = name.trim();
+    if (walletAddress !== undefined) foundUser.walletAddress = walletAddress ? walletAddress.trim() : null;
+    if (phone !== undefined) foundUser.phone = phone.trim();
+    if (bio !== undefined) foundUser.bio = bio.trim();
+    foundUser.updatedAt = new Date();
+
+    inMemoryUsers.set(foundUser.email, foundUser);
+
+    return {
+      id: foundUser._id ? foundUser._id.toString() : foundUser.id,
+      name: foundUser.name,
+      email: foundUser.email,
+      role: foundUser.role,
+      walletAddress: foundUser.walletAddress,
+      phone: foundUser.phone || '',
+      bio: foundUser.bio || '',
+      status: foundUser.status,
+      updatedAt: foundUser.updatedAt,
+    };
   }
 }

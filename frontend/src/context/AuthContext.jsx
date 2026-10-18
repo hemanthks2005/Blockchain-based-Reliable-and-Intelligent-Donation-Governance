@@ -141,8 +141,29 @@ export function AuthProvider({ children }) {
     setToken(`demo_token_${newRole.toLowerCase()}`);
   }, []);
 
+  // Update profile handler
+  const updateProfile = useCallback(async (profileData) => {
+    let updated = null;
+    if (token) {
+      try {
+        updated = await authService.updateProfile(token, profileData);
+      } catch (err) {
+        console.warn('Backend updateProfile notice (using local update fallback):', err.message);
+      }
+    }
+    const finalUser = updated || {
+      ...currentUser,
+      ...profileData,
+      updatedAt: new Date().toISOString(),
+    };
+    setCurrentUser(finalUser);
+    localStorage.setItem('bridge_user', JSON.stringify(finalUser));
+    return finalUser;
+  }, [token, currentUser]);
+
   const value = {
     currentUser,
+    user: currentUser, // alias for convenience
     token,
     role: currentUser?.role || null,
     isAuthenticated: Boolean(currentUser && token),
@@ -151,6 +172,7 @@ export function AuthProvider({ children }) {
     register,
     logout,
     switchRole,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

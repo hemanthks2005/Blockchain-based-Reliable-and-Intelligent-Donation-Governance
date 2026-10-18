@@ -122,3 +122,51 @@ export const trackDonation = async (req, res, next) => {
     next(error);
   }
 };
+
+export const createRazorpayOrder = async (req, res, next) => {
+  try {
+    const { requestId, amount } = req.body;
+    const donorId = req.user?.id || req.body.donorId || '67abc1234567890123456781';
+    const donorName = req.user?.name || req.body.donorName || 'Generous Donor';
+    const donorEmail = req.user?.email || req.body.donorEmail || '';
+
+    const orderData = await donationService.createRazorpayOrder({
+      requestId,
+      amount,
+      donorId,
+      donorName,
+      donorEmail,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: orderData,
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, error: { message: error.message } });
+    }
+    next(error);
+  }
+};
+
+export const verifyRazorpayPayment = async (req, res, next) => {
+  try {
+    const { donationId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    const result = await donationService.verifyRazorpayPayment({
+      donationId,
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ success: false, error: { message: error.message } });
+    }
+    next(error);
+  }
+};
+

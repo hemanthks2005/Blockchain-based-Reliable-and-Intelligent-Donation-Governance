@@ -9,6 +9,40 @@ function getAuthHeader() {
 
 export const donationService = {
   /**
+   * Razorpay: Create payment order & donation intent
+   */
+  async createRazorpayOrder({ requestId, amount }) {
+    const res = await fetch(`${DONATIONS_URL}/razorpay/order`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ requestId, amount }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || data.message || 'Failed to initialize Razorpay payment');
+    return data.data;
+  },
+
+  /**
+   * Razorpay: Verify payment and receive clean acknowledgement
+   */
+  async verifyRazorpayPayment({ donationId, razorpayOrderId, razorpayPaymentId, razorpaySignature }) {
+    const res = await fetch(`${DONATIONS_URL}/razorpay/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ donationId, razorpayOrderId, razorpayPaymentId, razorpaySignature }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || data.message || 'Payment verification failed');
+    return data;
+  },
+
+  /**
    * 1. Create a donation intent (POST /donations)
    */
   async createDonation(payload) {

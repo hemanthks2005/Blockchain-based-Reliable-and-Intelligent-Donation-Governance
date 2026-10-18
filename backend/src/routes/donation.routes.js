@@ -6,11 +6,17 @@ import {
   getMyDonations,
   getAllDonations,
   trackDonation,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
 } from '../controllers/donation.controller.js';
 import { authenticate, optionalAuth } from '../middleware/auth.middleware.js';
 import { transactionLimiter } from '../middleware/rateLimiter.middleware.js';
 
 const router = express.Router();
+
+// Razorpay Payment Routes (Screen 7 & Screen 8)
+router.post('/razorpay/order', optionalAuth, createRazorpayOrder);
+router.post('/razorpay/verify', optionalAuth, verifyRazorpayPayment);
 
 // 1. Create a donation intent (POST /donations)
 router.post('/', optionalAuth, createDonation);

@@ -18,6 +18,17 @@ export function LoginPage() {
 
   const from = location.state?.from?.pathname;
 
+  // Prevent browser from auto-filling or auto-saving credentials
+  useEffect(() => {
+    setEmail('');
+    setPassword('');
+    const timer = setTimeout(() => {
+      setEmail('');
+      setPassword('');
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
+
   const navigateAfterLogin = (role) => {
     let targetPath = from;
     if (!targetPath || targetPath === '/login' || targetPath === '/register') {
@@ -150,7 +161,10 @@ export function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} autoComplete="off" data-lpignore="true">
+            {/* Decoy hidden inputs to prevent browser autofill/save password popup */}
+            <input type="text" name="decoy_username" tabIndex={-1} aria-hidden="true" autoComplete="username" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, pointerEvents: 'none' }} />
+            <input type="password" name="decoy_password" tabIndex={-1} aria-hidden="true" autoComplete="current-password" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, pointerEvents: 'none' }} />
             
             {/* Email Address with User Icon */}
             <div style={{ marginBottom: '18px' }}>
@@ -167,6 +181,10 @@ export function LoginPage() {
                 </span>
                 <input
                   type="email"
+                  name="bridge_auth_email_field"
+                  id="bridge_auth_email_field"
+                  autoComplete="off"
+                  data-lpignore="true"
                   required
                   placeholder="Email Address"
                   value={email}
@@ -192,6 +210,10 @@ export function LoginPage() {
                 </span>
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  name="bridge_auth_pass_field"
+                  id="bridge_auth_pass_field"
+                  autoComplete="new-password"
+                  data-lpignore="true"
                   required
                   placeholder="Password"
                   value={password}

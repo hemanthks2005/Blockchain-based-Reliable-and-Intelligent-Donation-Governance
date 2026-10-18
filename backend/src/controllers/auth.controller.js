@@ -62,9 +62,43 @@ export function getMe(req, res) {
   });
 }
 
+export async function updateProfile(req, res, next) {
+  try {
+    const userId = req.user.id || req.user._id;
+    const { name, email, walletAddress, phone, bio } = req.body;
+    const result = await authService.updateUserProfile(userId, {
+      name,
+      email,
+      walletAddress,
+      phone,
+      bio,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        user: result,
+      },
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: {
+          code: error.code || 'PROFILE_UPDATE_ERROR',
+          message: error.message,
+        },
+      });
+    }
+    next(error);
+  }
+}
+
 export function logout(req, res) {
   res.status(200).json({
     success: true,
     message: 'Logged out successfully',
   });
 }
+

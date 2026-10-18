@@ -75,6 +75,70 @@ function seedDefaultRequests() {
         createdAt: new Date(Date.now() - 2 * 86400000),
         updatedAt: new Date(),
       },
+      {
+        _id: '67abc1234567890123456805',
+        beneficiaryId: '67abc1234567890123456794',
+        beneficiaryName: 'BrightFuture Rural Schools',
+        title: 'Rural STEM & Digital Classroom Infrastructure',
+        description: 'Provide solar-powered computer labs, STEM kits, and high-speed satellite internet to rural schools.',
+        purpose: 'Computer hardware, solar panels, and digital teaching aids',
+        requestedAmount: 1200000,
+        approvedAmount: 1200000,
+        status: 'APPROVED',
+        reviewedBy: '67abc1234567890123456783',
+        reviewRemarks: 'Vendor quotes and digital syllabus verified',
+        reviewedAt: new Date(Date.now() - 4 * 86400000),
+        createdAt: new Date(Date.now() - 8 * 86400000),
+        updatedAt: new Date(),
+      },
+      {
+        _id: '67abc1234567890123456806',
+        beneficiaryId: '67abc1234567890123456792',
+        beneficiaryName: 'Care Foundation',
+        title: 'Emergency Pediatric Surgery & ICU Aid',
+        description: 'Subsidize urgent cardiology and neurological surgeries for underprivileged children in government hospitals.',
+        purpose: 'Surgeon fees, ICU bed subsidies, and post-op rehabilitation',
+        requestedAmount: 500000,
+        approvedAmount: 0,
+        status: 'PENDING',
+        reviewedBy: null,
+        reviewRemarks: null,
+        reviewedAt: null,
+        createdAt: new Date(Date.now() - 1 * 86400000),
+        updatedAt: new Date(),
+      },
+      {
+        _id: '67abc1234567890123456807',
+        beneficiaryId: '67abc1234567890123456795',
+        beneficiaryName: 'Annapurna Food Relief',
+        title: 'Daily Nutritious Meals for 500 Orphaned Children',
+        description: 'Wholesome balanced hot meals, fortified milk, and weekly nutrition monitoring for shelter homes.',
+        purpose: 'Kitchen groceries, grain silos, and meal transport logistics',
+        requestedAmount: 450000,
+        approvedAmount: 0,
+        status: 'PENDING',
+        reviewedBy: null,
+        reviewRemarks: null,
+        reviewedAt: null,
+        createdAt: new Date(Date.now() - 1 * 86400000),
+        updatedAt: new Date(),
+      },
+      {
+        _id: '67abc1234567890123456808',
+        beneficiaryId: '67abc1234567890123456791',
+        beneficiaryName: 'NGO Hope',
+        title: 'Bengaluru water scarcity',
+        description: 'Provide emergency clean water supply, water tankers, rainwater harvesting filters, and purification to drought-affected communities across Bengaluru.',
+        purpose: 'Emergency water supply, distribution logistics, and community filtration',
+        requestedAmount: 300000,
+        approvedAmount: 300000,
+        status: 'APPROVED',
+        reviewedBy: '67abc1234567890123456783',
+        reviewRemarks: 'Emergency water scarcity relief approved by Governance',
+        reviewedAt: new Date(),
+        createdAt: new Date(Date.now() - 0.5 * 86400000),
+        updatedAt: new Date(),
+      },
     ];
 
     for (const r of demoItems) {
@@ -130,11 +194,12 @@ export async function getRequests({ role, beneficiaryId, status } = {}) {
     let filter = {};
     if (role === 'BENEFICIARY' && beneficiaryId) {
       filter.beneficiaryId = beneficiaryId;
-    } else if (role === 'DONOR') {
-      // Donors see approved requests
-      filter.status = 'APPROVED';
-    } else if (status) {
+    }
+    if (status) {
       filter.status = status;
+    } else if (role === 'DONOR') {
+      // Donors see approved requests by default
+      filter.status = 'APPROVED';
     }
     return await FundRequest.find(filter).populate('beneficiaryId', 'name contactEmail verificationStatus').sort({ createdAt: -1 });
   } else {
@@ -142,10 +207,11 @@ export async function getRequests({ role, beneficiaryId, status } = {}) {
     let list = Array.from(inMemoryRequests.values());
     if (role === 'BENEFICIARY' && beneficiaryId) {
       list = list.filter((r) => r.beneficiaryId === beneficiaryId.toString());
+    }
+    if (status) {
+      list = list.filter((r) => r.status === status);
     } else if (role === 'DONOR') {
       list = list.filter((r) => r.status === 'APPROVED');
-    } else if (status) {
-      list = list.filter((r) => r.status === status);
     }
     return list;
   }

@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, ROLES } from '../../context/AuthContext';
 import { BridgeLogo } from '../common/BridgeLogo';
 
-export function DashboardLayout({ children, activeTab = 'dashboard' }) {
+export function DashboardLayout({ children, activeTab: propActiveTab }) {
   const { currentUser, role, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const currentHashTab = location.hash ? location.hash.replace('#', '') : null;
+  const activeTab = propActiveTab || currentHashTab || 'dashboard';
 
   const handleLogout = async () => {
     await logout();
@@ -38,15 +42,18 @@ export function DashboardLayout({ children, activeTab = 'dashboard' }) {
     { id: 'donations', label: 'View Donations', icon: '👁️', path: '/admin#donations' },
     { id: 'users', label: 'Users', icon: '👥', path: '/admin#users' },
     { id: 'logs', label: 'Transaction Logs', icon: '📜', path: '/admin#logs' },
+    { id: 'profile', label: 'Profile', icon: '👤', path: '/admin#profile' },
   ];
 
   const navItems = role === ROLES.ADMIN ? adminNav : role === ROLES.BENEFICIARY ? beneficiaryNav : donorNav;
+  const dashboardHome = role === ROLES.ADMIN ? '/admin' : role === ROLES.BENEFICIARY ? '/beneficiary' : '/donor';
+  const profilePath = role === ROLES.BENEFICIARY ? '/beneficiary#profile' : role === ROLES.ADMIN ? '/admin#profile' : '/donor#profile';
 
   const sidebarContent = (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Sidebar Logo Header */}
       <div style={{ padding: '22px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <BridgeLogo size="md" to="/" />
+        <BridgeLogo size="md" to={dashboardHome} />
         <button
           className="mobile-only"
           onClick={() => setMobileSidebarOpen(false)}
@@ -83,15 +90,46 @@ export function DashboardLayout({ children, activeTab = 'dashboard' }) {
         </button>
       </nav>
 
-      {/* Bottom User summary */}
-      <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
-        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-dark)' }}>
-          {currentUser?.name || 'User'}
+      {/* Bottom User summary (Clickable to Edit Profile) */}
+      <Link
+        to={profilePath}
+        onClick={() => setMobileSidebarOpen(false)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '14px 18px',
+          borderTop: '1px solid var(--border-subtle)',
+          background: activeTab === 'profile' ? 'var(--primary-green-light)' : 'var(--bg-subtle)',
+          textDecoration: 'none',
+          transition: 'all 0.2s ease',
+          cursor: 'pointer',
+        }}
+        title="Click to view and edit profile"
+      >
+        <div style={{ overflow: 'hidden', paddingRight: '8px' }}>
+          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-dark)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+            {currentUser?.name || 'User'}
+          </div>
+          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+            {currentUser?.email}
+          </div>
         </div>
-        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-          {currentUser?.email}
-        </div>
-      </div>
+        <span
+          style={{
+            fontSize: '0.72rem',
+            color: 'var(--primary-green)',
+            fontWeight: 700,
+            backgroundColor: '#ffffff',
+            border: '1px solid var(--primary-green-border)',
+            padding: '3px 8px',
+            borderRadius: 'var(--radius-sm)',
+            flexShrink: 0,
+          }}
+        >
+          Edit ✎
+        </span>
+      </Link>
     </div>
   );
 
@@ -186,7 +224,7 @@ export function DashboardLayout({ children, activeTab = 'dashboard' }) {
             >
               ☰
             </button>
-            <BridgeLogo size="sm" to="/" />
+            <BridgeLogo size="sm" to={dashboardHome} />
           </div>
 
           <span className="badge-approved" style={{ fontSize: '0.75rem' }}>
@@ -219,8 +257,23 @@ export function DashboardLayout({ children, activeTab = 'dashboard' }) {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Link to="/" style={{ fontSize: '0.85rem', color: 'var(--primary-green)', fontWeight: 600 }}>
-                ← Return Home
+              <Link
+                to={profilePath}
+                className="btn-secondary"
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '0.78rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontWeight: 600,
+                  backgroundColor: activeTab === 'profile' ? 'var(--primary-green-light)' : '#ffffff',
+                  borderColor: activeTab === 'profile' ? 'var(--primary-green)' : 'var(--border-light)',
+                  color: activeTab === 'profile' ? 'var(--primary-green)' : 'var(--text-dark)',
+                  textDecoration: 'none',
+                }}
+              >
+                <span>✏️</span> {activeTab === 'profile' ? 'Editing Profile' : 'Edit Profile'}
               </Link>
               <span className="badge-approved" style={{ fontSize: '0.7rem' }}>
                 Live Network
@@ -237,3 +290,4 @@ export function DashboardLayout({ children, activeTab = 'dashboard' }) {
     </div>
   );
 }
+
