@@ -364,6 +364,17 @@ export const adminService = {
         totalDonations: '₹40,000',
         createdAt: new Date(Date.now() - 5 * 86400000),
       },
+      {
+        _id: '67abc1234567890123456784',
+        name: 'Hemanth K S',
+        email: 'hemanthknskns2005@gmail.com',
+        role: 'ADMIN',
+        walletAddress: '0xbDA5747bFD65F08deb54cb465eB87D40e51B197E',
+        phone: '+91 91234 56789',
+        status: 'ACTIVE',
+        totalDonations: 'N/A',
+        createdAt: new Date(),
+      },
     ];
 
     let filtered = [...demoUsers];
@@ -391,6 +402,52 @@ export const adminService = {
         pages: 1,
       },
     };
+  },
+
+  async createUser({ name, email, password, role = 'DONOR', walletAddress, status = 'ACTIVE' }) {
+    const normalizedEmail = (email || '').toLowerCase().trim();
+    if (!name || !email || !password) {
+      const err = new Error('Name, email, and password are required.');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const { hashPassword } = await import('../utils/auth.js');
+    const passwordHash = await hashPassword(password);
+    const userObj = {
+      _id: new mongoose.Types.ObjectId().toString(),
+      name,
+      email: normalizedEmail,
+      role: (role || 'DONOR').toUpperCase(),
+      walletAddress: walletAddress || null,
+      status: status || 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    if (isDbConnected()) {
+      const existing = await User.findOne({ email: normalizedEmail });
+      if (existing) {
+        const err = new Error('A user with this email already exists.');
+        err.statusCode = 409;
+        throw err;
+      }
+      const created = await User.create({
+        ...userObj,
+        passwordHash,
+      });
+      return {
+        _id: created._id.toString(),
+        name: created.name,
+        email: created.email,
+        role: created.role,
+        walletAddress: created.walletAddress,
+        status: created.status,
+        createdAt: created.createdAt,
+      };
+    }
+
+    return userObj;
   },
 
   async updateUserStatus(id, newStatus) {

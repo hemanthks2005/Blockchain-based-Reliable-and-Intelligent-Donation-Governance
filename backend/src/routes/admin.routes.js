@@ -9,6 +9,7 @@ import {
   getTransactionReport,
   getUsers,
   updateUserStatus,
+  createUser,
 } from '../controllers/admin.controller.js';
 import { verify as verifyBeneficiary } from '../controllers/beneficiary.controller.js';
 import { updateStatus as updateRequestStatus } from '../controllers/request.controller.js';
@@ -28,6 +29,7 @@ router.get('/reports/donations', getDonationReport);
 router.get('/reports/beneficiaries', getBeneficiaryReport);
 router.get('/reports/transactions', getTransactionReport);
 router.get('/users', getUsers);
+router.post('/users', createUser);
 router.patch('/users/:id/status', updateUserStatus);
 router.post('/users/:id/status', updateUserStatus);
 

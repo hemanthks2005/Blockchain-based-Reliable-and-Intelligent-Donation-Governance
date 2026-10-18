@@ -139,3 +139,17 @@ export const updateUserStatus = async (req, res, next) => {
     next(error);
   }
 };
+
+export const createUser = async (req, res, next) => {
+  try {
+    const { name, email, password, role, walletAddress, status } = req.body;
+    const user = await adminService.createUser({ name, email, password, role, walletAddress, status });
+    res.status(201).json({
+      success: true,
+      data: user,
+      message: 'User created successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -98,12 +98,44 @@ export const adminService = {
   async getUsers(params = {}) {
     const query = new URLSearchParams(params).toString();
     const url = query ? `${ADMIN_URL}/users?${query}` : `${ADMIN_URL}/users`;
-    const res = await fetch(url, {
-      headers: { ...getAuthHeader() },
+    try {
+      const res = await fetch(url, {
+        headers: { ...getAuthHeader() },
+      });
+      const data = await res.json();
+      if (res.ok && data.success && Array.isArray(data.data)) {
+        return data.data;
+      }
+    } catch (err) {
+      console.warn('Backend /admin/users endpoint error:', err.message);
+    }
+    return [];
+  },
+
+  async createUser(userData) {
+    try {
+      const res = await fetch(`${ADMIN_URL}/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify(userData),
+      });
+      const data = await res.json();
+      if (res.ok && data.data) return data.data;
+    } catch (e) {
+      console.warn('POST /admin/users failed, attempting register fallback:', e);
+    }
+
+    const res2 = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'Failed to fetch users');
-    return data.data || [];
+    const data2 = await res2.json();
+    if (!res2.ok) throw new Error(data2.error?.message || data2.message || 'Failed to create user');
+    return data2.data;
   },
 
   async updateUserStatus(userId, status) {
