@@ -1,16 +1,22 @@
+import dns from 'dns';
 import mongoose from 'mongoose';
 import { config } from './env.js';
 import { logger } from '../utils/logger.js';
+
+// Ensure Windows local DNS handles MongoDB SRV lookups via Google/Cloudflare public DNS
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (_e) {}
 
 let isConnected = false;
 
 export async function connectDB() {
   const uri = config.mongoUri;
-  logger.info(`Attempting MongoDB connection to: ${uri}`);
+  logger.info(`Attempting MongoDB connection to: ${uri.replace(/:([^:@]{1,})@/, ':****@')}`);
 
   try {
     const conn = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 3000,
+      serverSelectionTimeoutMS: 10000,
     });
     isConnected = true;
     logger.info(`MongoDB Connected successfully: ${conn.connection.host}/${conn.connection.name}`);
