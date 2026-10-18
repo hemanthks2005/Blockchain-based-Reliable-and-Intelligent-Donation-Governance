@@ -95,20 +95,22 @@ export function LoginPage() {
       
       {/* Left Column: Login Card & Form */}
       <div
+        className="auth-card-container"
         style={{
           flex: '1 1 500px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: 'clamp(32px, 5vw, 64px) 24px',
+          padding: 'clamp(24px, 4vw, 64px) 16px',
           position: 'relative',
+          width: '100%',
         }}
       >
         <div style={{ width: '100%', maxWidth: '440px' }}>
           
           {/* Floating Glassmorphic Authentication Card */}
-          <div className="bridge-glass-card" style={{ padding: 'clamp(28px, 4vw, 42px) clamp(24px, 4vw, 36px)' }}>
+          <div className="bridge-glass-card" style={{ padding: 'clamp(24px, 4vw, 42px) clamp(18px, 4vw, 36px)', width: '100%' }}>
             
             {/* Top Brand Header */}
             <div style={{ textAlign: 'center', marginBottom: '28px' }}>
@@ -362,7 +364,7 @@ export function LoginPage() {
           </div>
 
           {/* Security & Verification Footer */}
-          <div style={{ marginTop: '20px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+          <div style={{ marginTop: '20px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '6px 12px', color: 'var(--text-muted)', fontSize: '0.78rem', maxWidth: '380px', margin: '20px auto 0' }}>
             <span>🔒 End-to-End Encrypted</span>
             <span>•</span>
             <span>Smart Contract Governed</span>

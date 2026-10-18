@@ -86,18 +86,20 @@ export function RegisterPage() {
       
       {/* Left Column: Form inside Glassmorphic Card */}
       <div
+        className="auth-card-container"
         style={{
           flex: '1 1 520px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: 'clamp(32px, 5vw, 64px) 24px',
+          padding: 'clamp(24px, 4vw, 64px) 16px',
+          width: '100%',
         }}
       >
         <div style={{ width: '100%', maxWidth: '460px' }}>
           
-          <div className="bridge-glass-card" style={{ padding: 'clamp(28px, 4vw, 40px) clamp(24px, 4vw, 36px)' }}>
+          <div className="bridge-glass-card" style={{ padding: 'clamp(24px, 4vw, 40px) clamp(18px, 4vw, 36px)', width: '100%' }}>
             
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
               <div style={{ display: 'inline-block', marginBottom: '12px' }}>
@@ -290,7 +292,7 @@ export function RegisterPage() {
 
           </div>
 
-          <div style={{ marginTop: '20px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+          <div style={{ marginTop: '20px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '6px 12px', color: 'var(--text-muted)', fontSize: '0.78rem', maxWidth: '380px', margin: '20px auto 0' }}>
             <span>🔒 Secure Enclave</span>
             <span>•</span>
             <span>Verified Identity</span>
