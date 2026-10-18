@@ -470,9 +470,9 @@ export function AdminDashboard() {
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.84rem' }}>
-                  <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Smart Contract Volume:</span>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Total Processed Volume:</span>
                   <span style={{ fontWeight: 700, color: 'var(--primary-green)' }}>
-                    ₹ {(stats?.totalAmountCollectedInr || 48000).toLocaleString('en-IN')} (0.30 ETH)
+                    ₹ {(stats?.totalAmountCollectedInr || 48000).toLocaleString('en-IN')}
                   </span>
                 </div>
 
@@ -805,9 +805,6 @@ export function AdminDashboard() {
               <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-dark)' }}>
                 ₹ {(stats?.totalAmountCollectedInr || 48000).toLocaleString('en-IN')}
               </span>
-              <div style={{ fontSize: '0.75rem', color: 'var(--primary-green)', fontWeight: 700 }}>
-                {stats?.totalAmountCollectedEth || '0.30'} ETH
-              </div>
             </div>
           </div>
           <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>
@@ -1831,8 +1828,8 @@ export function AdminDashboard() {
                       <th style={{ padding: '10px 12px', fontWeight: 600 }}>Date</th>
                       <th style={{ padding: '10px 12px', fontWeight: 600 }}>Donor</th>
                       <th style={{ padding: '10px 12px', fontWeight: 600 }}>Campaign</th>
-                      <th style={{ padding: '10px 12px', fontWeight: 600 }}>Amount INR</th>
-                      <th style={{ padding: '10px 12px', fontWeight: 600 }}>Amount ETH</th>
+                      <th style={{ padding: '10px 12px', fontWeight: 600 }}>Amount (INR)</th>
+                      <th style={{ padding: '10px 12px', fontWeight: 600 }}>Payment Method</th>
                       <th style={{ padding: '10px 12px', fontWeight: 600 }}>Status</th>
                     </tr>
                   </thead>
@@ -1843,7 +1840,7 @@ export function AdminDashboard() {
                         <td style={{ padding: '10px 12px', fontWeight: 600 }}>{d.donorName || 'Anonymous'}</td>
                         <td style={{ padding: '10px 12px' }}>{d.requestTitle || 'Community Fund'}</td>
                         <td style={{ padding: '10px 12px', fontWeight: 700 }}>₹{Number(d.amount || 0).toLocaleString('en-IN')}</td>
-                        <td style={{ padding: '10px 12px', color: 'var(--primary-green)', fontWeight: 700 }}>{d.amountEth || (d.amount / 160000).toFixed(2)} ETH</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--accent-blue)', fontWeight: 600 }}>{d.paymentMethod || 'Razorpay / Gateway'}</td>
                         <td style={{ padding: '10px 12px' }}><span className="badge-approved" style={{ fontSize: '0.72rem' }}>{d.status}</span></td>
                       </tr>
                     ))}
