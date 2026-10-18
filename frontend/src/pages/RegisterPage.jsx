@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, ROLES } from '../context/AuthContext';
 import { BridgeLogo } from '../components/common/BridgeLogo';
@@ -18,10 +18,34 @@ export function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
+  // Clear browser-injected autofill on mount
+  useEffect(() => {
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      name: '',
+      email: '',
+      password: '',
+      walletAddress: '',
+    }));
+    const t1 = setTimeout(() => {
+      setFormData((prev) => ({ ...prev, email: '', password: '' }));
+    }, 120);
+    const t2 = setTimeout(() => {
+      setFormData((prev) => ({ ...prev, email: '', password: '' }));
+    }, 350);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
+
+  const handleChange = (e) => {
+    let key = e.target.name;
+    if (key === 'bridge_reg_email_field') key = 'email';
+    if (key === 'bridge_reg_password_field') key = 'password';
+    setFormData((prev) => ({
+      ...prev,
+      [key]: e.target.value,
     }));
   };
 
@@ -135,7 +159,10 @@ export function RegisterPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} autoComplete="off" data-lpignore="true">
+              {/* Decoy hidden inputs to prevent browser autofill/save password popup */}
+              <input type="text" name="decoy_username" tabIndex={-1} aria-hidden="true" autoComplete="username" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, pointerEvents: 'none' }} />
+              <input type="password" name="decoy_password" tabIndex={-1} aria-hidden="true" autoComplete="current-password" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, pointerEvents: 'none' }} />
               
               {/* Name */}
               <div className="bridge-form-group">
@@ -145,6 +172,9 @@ export function RegisterPage() {
                 <input
                   type="text"
                   name="name"
+                  id="bridge_reg_name"
+                  autoComplete="off"
+                  data-lpignore="true"
                   required
                   placeholder="e.g. Ramesh Kumar or Hope Foundation"
                   value={formData.name}
@@ -160,7 +190,10 @@ export function RegisterPage() {
                 </label>
                 <input
                   type="email"
-                  name="email"
+                  name="bridge_reg_email_field"
+                  id="bridge_reg_email_field"
+                  autoComplete="off"
+                  data-lpignore="true"
                   required
                   placeholder="name@example.com"
                   value={formData.email}
@@ -176,7 +209,10 @@ export function RegisterPage() {
                 </label>
                 <input
                   type="password"
-                  name="password"
+                  name="bridge_reg_password_field"
+                  id="bridge_reg_password_field"
+                  autoComplete="new-password"
+                  data-lpignore="true"
                   required
                   placeholder="At least 6 characters"
                   value={formData.password}

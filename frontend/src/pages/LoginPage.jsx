@@ -22,11 +22,18 @@ export function LoginPage() {
   useEffect(() => {
     setEmail('');
     setPassword('');
-    const timer = setTimeout(() => {
+    const t1 = setTimeout(() => {
       setEmail('');
       setPassword('');
-    }, 150);
-    return () => clearTimeout(timer);
+    }, 120);
+    const t2 = setTimeout(() => {
+      setEmail('');
+      setPassword('');
+    }, 350);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
 
   const navigateAfterLogin = (role) => {
