@@ -1170,7 +1170,7 @@ export function AdminDashboard() {
                 </div>
                 <div>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>APPROVED AMOUNT</div>
-                  <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary-green)' }}>2.0 ETH</div>
+                  <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary-green)' }}>₹ 50,000</div>
                 </div>
                 <div>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>ESCROW STATUS</div>
@@ -1610,7 +1610,7 @@ export function AdminDashboard() {
                     <th style={{ padding: '14px 16px', fontWeight: 600 }}>Donor Address</th>
                     <th style={{ padding: '14px 16px', fontWeight: 600 }}>Beneficiary Address</th>
                     <th style={{ padding: '14px 16px', fontWeight: 600 }}>Request ID</th>
-                    <th style={{ padding: '14px 16px', fontWeight: 600 }}>Amount (ETH)</th>
+                    <th style={{ padding: '14px 16px', fontWeight: 600 }}>Amount (INR)</th>
                     <th style={{ padding: '14px 16px', fontWeight: 600 }}>Timestamp</th>
                     <th style={{ padding: '14px 16px', fontWeight: 600 }}>On-Chain State</th>
                   </tr>
@@ -1644,7 +1644,7 @@ export function AdminDashboard() {
                           Request #{rec.requestId}
                         </td>
                         <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--text-dark)' }}>
-                          {rec.amountEth || '0.1'} ETH
+                          ₹{(Number(rec.amount) || (rec.amountEth ? Math.round(Number(rec.amountEth) * 160000) : 16000)).toLocaleString('en-IN')}
                         </td>
                         <td style={{ padding: '14px 16px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                           {rec.timestamp ? new Date(rec.timestamp * 1000).toLocaleString() : 'Recent'}
@@ -1900,7 +1900,7 @@ export function AdminDashboard() {
                         </td>
                         <td style={{ padding: '10px 12px' }}>Block #{blockchainRecords?.network?.blockNumber || 10846}</td>
                         <td style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>{t.donor || '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1'}</td>
-                        <td style={{ padding: '10px 12px', fontWeight: 700 }}>{t.amountEth || '0.15'} ETH</td>
+                        <td style={{ padding: '10px 12px', fontWeight: 700 }}>₹{(Number(t.amount) || (t.amountEth ? Math.round(Number(t.amountEth) * 160000) : 24000)).toLocaleString('en-IN')}</td>
                         <td style={{ padding: '10px 12px' }}><span className="badge-approved" style={{ fontSize: '0.72rem' }}>SUCCESS</span></td>
                       </tr>
                     ))}

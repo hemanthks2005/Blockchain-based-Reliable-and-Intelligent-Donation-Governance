@@ -113,10 +113,10 @@ export function DonationTrackingModal({ isOpen, onClose, donation }) {
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--primary-green)' }}>
-              {donation.amountEth ? `${donation.amountEth} ETH` : `${donation.amount} INR`}
+              ₹{donation.amount ? Number(donation.amount).toLocaleString('en-IN') : (donation.amountEth ? Math.round(Number(donation.amountEth) * 160000).toLocaleString('en-IN') : '0')}
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              ₹{donation.amount ? Number(donation.amount).toLocaleString('en-IN') : '0'} INR
+              {donation.paymentMethod ? `${donation.paymentMethod} • INR` : 'Indian Rupees (INR)'}
             </div>
           </div>
         </div>

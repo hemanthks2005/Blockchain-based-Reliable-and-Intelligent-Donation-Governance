@@ -251,7 +251,7 @@ export function HealthStatusPage() {
               className="btn-primary"
               style={{ padding: '9px 18px', fontSize: '0.88rem' }}
             >
-              {txSubmitting ? 'Mining Transaction...' : '⚡ Execute Test Transaction (0.08 ETH)'}
+              {txSubmitting ? 'Mining Transaction...' : '⚡ Execute Test Transaction (₹12,800)'}
             </button>
           </div>
 

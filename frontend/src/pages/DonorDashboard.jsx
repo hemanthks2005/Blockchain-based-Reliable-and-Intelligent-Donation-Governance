@@ -71,7 +71,6 @@ export function DonorDashboard() {
 
   const [stats, setStats] = useState({
     totalDonatedInr: '₹ 48,000',
-    totalDonatedEth: '0.30 ETH',
     campaignsSupported: 2,
     transactions: 2,
   });
@@ -220,7 +219,6 @@ export function DonorDashboard() {
 
         setStats({
           totalDonatedInr: `₹ ${totalInr.toLocaleString('en-IN')}`,
-          totalDonatedEth: `${totalEth.toFixed(2)} ETH`,
           campaignsSupported: uniqueCampaigns.size || list.length,
           transactions: list.length,
         });
@@ -491,7 +489,7 @@ export function DonorDashboard() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.84rem' }}>
                   <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Total Impact:</span>
                   <span style={{ fontWeight: 700, color: 'var(--primary-green)' }}>
-                    {stats.totalDonatedInr} ({stats.totalDonatedEth})
+                    {stats.totalDonatedInr}
                   </span>
                 </div>
 
@@ -782,9 +780,6 @@ export function DonorDashboard() {
                 <div>
                   <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--text-dark)' }}>
                     {stats.totalDonatedInr}
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--primary-green)', fontWeight: 700 }}>
-                    {stats.totalDonatedEth}
                   </div>
                 </div>
               </div>

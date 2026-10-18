@@ -318,7 +318,7 @@ export function CampaignDetailsPage() {
               </h3>
               <div style={{ backgroundColor: 'var(--bg-app)', padding: '16px', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem' }}>
                 <div style={{ wordBreak: 'break-all', marginBottom: '6px' }}><strong>Contract Address:</strong> 0xd9d7e0f8901234567890abcdef12345678908c12</div>
-                <div style={{ marginBottom: '6px' }}><strong>Current Escrow Balance:</strong> 5.3125 ETH</div>
+                <div style={{ marginBottom: '6px' }}><strong>Current Escrow Balance:</strong> ₹8,50,000</div>
                 <div><strong>Disbursement Status:</strong> Phase 1 Verified by Governance Admin</div>
               </div>
             </div>
@@ -330,7 +330,7 @@ export function CampaignDetailsPage() {
                 Recent Contributors
               </h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                120 verified community donors have contributed to this campaign on Ethereum.
+                120 verified community donors have contributed to this campaign in INR via Razorpay.
               </p>
             </div>
           )}

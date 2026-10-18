@@ -30,7 +30,7 @@ function seedDefaultDonations() {
         beneficiaryAddress: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
         amount: 16000,
         amountEth: 0.1,
-        currency: 'ETH',
+        currency: 'INR',
         status: 'CONFIRMED',
         walletAddress: '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
         blockchainTxHash: '0x3a4f8e91b2c5d7e0f8901234567890abcdef1234567890abcdef1234567890ab',
@@ -59,7 +59,7 @@ function seedDefaultDonations() {
         beneficiaryAddress: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
         amount: 32000,
         amountEth: 0.2,
-        currency: 'ETH',
+        currency: 'INR',
         status: 'CONFIRMED',
         walletAddress: '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
         blockchainTxHash: '0x9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c',
@@ -88,7 +88,7 @@ function seedDefaultDonations() {
         beneficiaryAddress: '0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1',
         amount: 24000,
         amountEth: 0.15,
-        currency: 'ETH',
+        currency: 'INR',
         status: 'CONFIRMED',
         walletAddress: '0x71C95911E9A5D330f4D621457224213B443d348a',
         blockchainTxHash: '0x5c4a3b2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b',
@@ -117,7 +117,7 @@ function seedDefaultDonations() {
         beneficiaryAddress: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
         amount: 80000,
         amountEth: 0.5,
-        currency: 'ETH',
+        currency: 'INR',
         status: 'CONFIRMED',
         walletAddress: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
         blockchainTxHash: '0x7b2a9c4d5e8f1a0b3c6d9e2f5a8b1c4d7e0f3a6b9c2d5e8f1a4b7c0d3e6f9a2b',
@@ -146,7 +146,7 @@ function seedDefaultDonations() {
         beneficiaryAddress: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
         amount: 40000,
         amountEth: 0.25,
-        currency: 'ETH',
+        currency: 'INR',
         status: 'CONFIRMED',
         walletAddress: '0x9965507D1a55bcC2695C58ba16FB37d819B0A4df',
         blockchainTxHash: '0x1e8b4f7a0c3d6e9b2a5f8c1d4e7a0b3c6d9e2f5a8b1c4d7e0f3a6b9c2d5e8f1a',
@@ -182,7 +182,7 @@ export const donationService = {
     requestId,
     amount,
     amountEth,
-    currency = 'ETH',
+    currency = 'INR',
   }) {
     if (!requestId) {
       throw new Error('Request ID is required');
@@ -227,7 +227,7 @@ export const donationService = {
       {
         event: 'CREATED',
         timestamp: new Date(),
-        details: `Donation intent initialized for ${parsedEth} ETH (₹${parsedAmount.toLocaleString('en-IN')})`,
+        details: `Donation intent initialized for ₹${parsedAmount.toLocaleString('en-IN')}`,
       },
     ];
 
