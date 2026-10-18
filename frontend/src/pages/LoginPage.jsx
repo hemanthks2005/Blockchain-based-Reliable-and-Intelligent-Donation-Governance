@@ -77,13 +77,6 @@ export function LoginPage() {
     navigateAfterLogin(targetRole);
   };
 
-  const fillDemoAccount = (demoEmail, demoRole) => {
-    setEmail(demoEmail);
-    setPassword('StrongPassword123');
-    setError(null);
-    setIsNetworkError(false);
-  };
-
   const getTargetDemoRole = () => {
     if (email.toLowerCase().includes('admin')) return 'Admin';
     if (email.toLowerCase().includes('beneficiary')) return 'Beneficiary';
@@ -261,66 +254,12 @@ export function LoginPage() {
               href="#forgot"
               onClick={(e) => {
                 e.preventDefault();
-                alert('For prototype demo, use password: StrongPassword123 or click the quick demo buttons below.');
+                alert('Please contact your administrator to reset your password or register for a new account.');
               }}
               style={{ color: 'var(--accent-blue)', fontWeight: 500 }}
             >
               Forgot Password?
             </a>
-          </div>
-
-          {/* Quick Demo Fill Buttons */}
-          <div style={{ marginTop: '28px', paddingTop: '18px', borderTop: '1px solid var(--border-light)' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-light)', textAlign: 'center', marginBottom: '10px' }}>
-              ONE-CLICK DEMO ACCOUNTS
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('donor@bridge.org')}
-                style={{
-                  padding: '7px 4px',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'var(--primary-green-light)',
-                  border: '1px solid var(--primary-green-border)',
-                  color: 'var(--primary-green)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                }}
-              >
-                Donor
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('beneficiary@bridge.org')}
-                style={{
-                  padding: '7px 4px',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'var(--accent-purple-light)',
-                  border: '1px solid var(--accent-purple-border)',
-                  color: 'var(--accent-purple)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                }}
-              >
-                Beneficiary
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('admin@bridge.org')}
-                style={{
-                  padding: '7px 4px',
-                  borderRadius: 'var(--radius-sm)',
-                  backgroundColor: 'var(--accent-amber-light)',
-                  border: '1px solid var(--accent-amber-border)',
-                  color: 'var(--accent-amber)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                }}
-              >
-                Admin
-              </button>
-            </div>
           </div>
 
         </div>
