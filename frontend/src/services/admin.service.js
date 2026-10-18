@@ -91,6 +91,34 @@ export const adminService = {
     if (!res.ok) throw new Error(data.error?.message || 'Failed to generate transaction report');
     return data.data;
   },
+
+  /**
+   * 6. User Management APIs
+   */
+  async getUsers(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const url = query ? `${ADMIN_URL}/users?${query}` : `${ADMIN_URL}/users`;
+    const res = await fetch(url, {
+      headers: { ...getAuthHeader() },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Failed to fetch users');
+    return data.data || [];
+  },
+
+  async updateUserStatus(userId, status) {
+    const res = await fetch(`${ADMIN_URL}/users/${userId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Failed to update user status');
+    return data.data;
+  },
 };
 
 export default adminService;

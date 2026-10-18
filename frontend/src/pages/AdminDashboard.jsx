@@ -13,9 +13,21 @@ export function AdminDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const currentNavTab = location.hash ? location.hash.replace('#', '') : 'dashboard';
+  const getTabFromHash = (hash) => {
+    const clean = hash ? hash.replace('#', '') : 'dashboard';
+    if (clean === 'verify') return 'verify';
+    if (clean === 'approve') return 'approve';
+    if (clean === 'release' || clean === 'fund_release') return 'release';
+    if (clean === 'donations') return 'donations';
+    if (clean === 'users') return 'users';
+    if (clean === 'logs' || clean === 'audit') return 'logs';
+    if (clean === 'blockchain') return 'blockchain';
+    if (clean === 'reports') return 'reports';
+    if (clean === 'profile') return 'profile';
+    return 'dashboard';
+  };
 
-  const [activeTab, setActiveTab] = useState('governance'); // 'governance' | 'donations' | 'blockchain' | 'audit' | 'reports'
+  const [activeTab, setActiveTab] = useState(getTabFromHash(location.hash));
   const [requests, setRequests] = useState([]);
   const [beneficiaries, setBeneficiaries] = useState([]);
   const [donations, setDonations] = useState([]);
@@ -24,6 +36,44 @@ export function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState(null);
+
+  // User Management State (Sidebar -> Users)
+  const [usersList, setUsersList] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userRoleFilter, setUserRoleFilter] = useState('ALL');
+  const [userStatusFilter, setUserStatusFilter] = useState('ALL');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userActionSuccess, setUserActionSuccess] = useState('');
+
+  const loadUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const res = await adminService.getUsers({
+        role: userRoleFilter,
+        status: userStatusFilter,
+        search: userSearchQuery,
+      });
+      setUsersList(res.users || res || []);
+    } catch (err) {
+      console.warn('Could not load users list:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleToggleUserStatus = async (userId, currentStatus) => {
+    const nextStatus = currentStatus === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    try {
+      await adminService.updateUserStatus(userId, nextStatus);
+      setUserActionSuccess(`User status updated to ${nextStatus}`);
+      setTimeout(() => setUserActionSuccess(''), 3000);
+      setUsersList((prev) =>
+        prev.map((u) => (u._id === userId ? { ...u, status: nextStatus } : u))
+      );
+    } catch (err) {
+      alert(`Failed to update status: ${err.message}`);
+    }
+  };
 
   // Governance Dispute & Threshold State
   const [governanceConfig, setGovernanceConfig] = useState({ reportThreshold: 2 });
@@ -63,11 +113,11 @@ export function AdminDashboard() {
   }, [activeUser]);
 
   useEffect(() => {
-    if (location.hash === '#donations') setActiveTab('donations');
-    else if (location.hash === '#logs') setActiveTab('audit');
-    else if (location.hash === '#blockchain') setActiveTab('blockchain');
-    else if (location.hash === '#reports') setActiveTab('reports');
-    else if (location.hash === '#verify' || location.hash === '#approve' || location.hash === '#release') setActiveTab('governance');
+    const tab = getTabFromHash(location.hash);
+    setActiveTab(tab);
+    if (tab === 'users') {
+      loadUsers();
+    }
   }, [location.hash]);
 
   const [trackingDonation, setTrackingDonation] = useState(null);
@@ -302,10 +352,23 @@ export function AdminDashboard() {
     ? donations
     : donations.filter((d) => d.status === donationFilter);
 
+  const filteredUsers = usersList.filter((u) => {
+    if (userRoleFilter !== 'ALL' && u.role?.toUpperCase() !== userRoleFilter) return false;
+    if (userStatusFilter !== 'ALL' && (u.status || 'ACTIVE').toUpperCase() !== userStatusFilter) return false;
+    if (userSearchQuery.trim()) {
+      const q = userSearchQuery.toLowerCase();
+      const matchName = (u.name || '').toLowerCase().includes(q);
+      const matchEmail = (u.email || '').toLowerCase().includes(q);
+      const matchWallet = (u.walletAddress || '').toLowerCase().includes(q);
+      if (!matchName && !matchEmail && !matchWallet) return false;
+    }
+    return true;
+  });
+
   return (
-    <DashboardLayout activeTab={currentNavTab}>
+    <DashboardLayout activeTab={activeTab}>
       
-      {currentNavTab === 'profile' ? (
+      {activeTab === 'profile' ? (
         /* ============================================================== */
         /* FULL INTERACTIVE SYSTEM GOVERNANCE ADMIN PROFILE & SETTINGS   */
         /* ============================================================== */
@@ -814,6 +877,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Admin Sub-Navigation Tabs (Sprint 6) */}
+      {/* Admin Sub-Navigation Tabs */}
       <div
         style={{
           display: 'flex',
@@ -822,16 +886,17 @@ export function AdminDashboard() {
           paddingBottom: '12px',
           marginBottom: '28px',
           overflowX: 'auto',
+          flexWrap: 'wrap',
         }}
       >
         <button
-          onClick={() => setActiveTab('governance')}
+          onClick={() => { setActiveTab('dashboard'); navigate('/admin'); }}
           style={{
             padding: '8px 16px',
             borderRadius: 'var(--radius-sm)',
             border: 'none',
-            backgroundColor: activeTab === 'governance' ? 'var(--primary-green)' : 'transparent',
-            color: activeTab === 'governance' ? '#ffffff' : 'var(--text-muted)',
+            backgroundColor: (activeTab === 'dashboard' || activeTab === 'governance') ? 'var(--primary-green)' : 'transparent',
+            color: (activeTab === 'dashboard' || activeTab === 'governance') ? '#ffffff' : 'var(--text-muted)',
             fontWeight: 600,
             fontSize: '0.88rem',
             cursor: 'pointer',
@@ -840,25 +905,96 @@ export function AdminDashboard() {
             gap: '8px',
           }}
         >
-          <span>⚖️</span> Governance & Approvals
-          {(pendingRequestsCount + pendingBeneficiariesCount) > 0 && (
+          <span>📊</span> Overview
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('verify'); navigate('/admin#verify'); }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            backgroundColor: activeTab === 'verify' ? 'var(--primary-green)' : 'transparent',
+            color: activeTab === 'verify' ? '#ffffff' : 'var(--text-muted)',
+            fontWeight: 600,
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>🛡️</span> Verify Beneficiaries
+          {pendingBeneficiariesCount > 0 && (
             <span
               style={{
-                backgroundColor: activeTab === 'governance' ? '#ffffff' : 'var(--danger-red)',
-                color: activeTab === 'governance' ? 'var(--primary-green)' : '#ffffff',
+                backgroundColor: activeTab === 'verify' ? '#ffffff' : 'var(--danger-red)',
+                color: activeTab === 'verify' ? 'var(--primary-green)' : '#ffffff',
                 padding: '1px 6px',
                 borderRadius: '10px',
                 fontSize: '0.72rem',
                 fontWeight: 700,
               }}
             >
-              {pendingRequestsCount + pendingBeneficiariesCount}
+              {pendingBeneficiariesCount}
             </span>
           )}
         </button>
 
         <button
-          onClick={() => setActiveTab('donations')}
+          onClick={() => { setActiveTab('approve'); navigate('/admin#approve'); }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            backgroundColor: activeTab === 'approve' ? 'var(--primary-green)' : 'transparent',
+            color: activeTab === 'approve' ? '#ffffff' : 'var(--text-muted)',
+            fontWeight: 600,
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>📋</span> Approve Campaigns
+          {pendingRequestsCount > 0 && (
+            <span
+              style={{
+                backgroundColor: activeTab === 'approve' ? '#ffffff' : 'var(--danger-red)',
+                color: activeTab === 'approve' ? 'var(--primary-green)' : '#ffffff',
+                padding: '1px 6px',
+                borderRadius: '10px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+              }}
+            >
+              {pendingRequestsCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('release'); navigate('/admin#release'); }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            backgroundColor: activeTab === 'release' ? 'var(--primary-green)' : 'transparent',
+            color: activeTab === 'release' ? '#ffffff' : 'var(--text-muted)',
+            fontWeight: 600,
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>💸</span> Fund Release
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('donations'); navigate('/admin#donations'); }}
           style={{
             padding: '8px 16px',
             borderRadius: 'var(--radius-sm)',
@@ -873,7 +1009,7 @@ export function AdminDashboard() {
             gap: '8px',
           }}
         >
-          <span>💰</span> Donation Monitoring
+          <span>💰</span> Donations
           <span
             style={{
               backgroundColor: activeTab === 'donations' ? 'rgba(255,255,255,0.2)' : 'var(--bg-subtle)',
@@ -887,7 +1023,55 @@ export function AdminDashboard() {
         </button>
 
         <button
-          onClick={() => setActiveTab('blockchain')}
+          onClick={() => { setActiveTab('users'); navigate('/admin#users'); }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            backgroundColor: activeTab === 'users' ? 'var(--primary-green)' : 'transparent',
+            color: activeTab === 'users' ? '#ffffff' : 'var(--text-muted)',
+            fontWeight: 600,
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>👥</span> Users
+          <span
+            style={{
+              backgroundColor: activeTab === 'users' ? 'rgba(255,255,255,0.2)' : 'var(--bg-subtle)',
+              padding: '1px 6px',
+              borderRadius: '10px',
+              fontSize: '0.72rem',
+            }}
+          >
+            {usersList.length || 7}
+          </span>
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('logs'); navigate('/admin#logs'); }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            backgroundColor: (activeTab === 'logs' || activeTab === 'audit') ? 'var(--primary-green)' : 'transparent',
+            color: (activeTab === 'logs' || activeTab === 'audit') ? '#ffffff' : 'var(--text-muted)',
+            fontWeight: 600,
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>📜</span> Transaction Logs
+        </button>
+
+        <button
+          onClick={() => { setActiveTab('blockchain'); navigate('/admin#blockchain'); }}
           style={{
             padding: '8px 16px',
             borderRadius: 'var(--radius-sm)',
@@ -902,30 +1086,11 @@ export function AdminDashboard() {
             gap: '8px',
           }}
         >
-          <span>⛓️</span> Blockchain Record Viewer
+          <span>⛓️</span> Blockchain Records
         </button>
 
         <button
-          onClick={() => setActiveTab('audit')}
-          style={{
-            padding: '8px 16px',
-            borderRadius: 'var(--radius-sm)',
-            border: 'none',
-            backgroundColor: activeTab === 'audit' ? 'var(--primary-green)' : 'transparent',
-            color: activeTab === 'audit' ? '#ffffff' : 'var(--text-muted)',
-            fontWeight: 600,
-            fontSize: '0.88rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <span>📜</span> Audit Logs
-        </button>
-
-        <button
-          onClick={() => setActiveTab('reports')}
+          onClick={() => { setActiveTab('reports'); navigate('/admin#reports'); }}
           style={{
             padding: '8px 16px',
             borderRadius: 'var(--radius-sm)',
@@ -944,11 +1109,9 @@ export function AdminDashboard() {
         </button>
       </div>
 
-      {/* TAB 1: Governance & Approvals */}
-      {activeTab === 'governance' && (
-        <div>
-          {/* SECTION 1: Beneficiary Verification Queue */}
-          <div style={{ marginBottom: '36px' }}>
+      {/* SECTION 1: Beneficiary Verification Queue */}
+      {(activeTab === 'dashboard' || activeTab === 'governance' || activeTab === 'verify') && (
+        <div style={{ marginBottom: '36px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-dark)' }}>
                 Beneficiary Organization Verifications
@@ -1029,13 +1192,15 @@ export function AdminDashboard() {
               </div>
             </div>
           </div>
+        )}
 
-          {/* SECTION 2: Campaign Requests Review */}
-          <div style={{ marginBottom: '40px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-dark)' }}>
-                Recent Campaign Requests Review
-              </h2>
+      {/* SECTION 2: Campaign Requests Review */}
+      {(activeTab === 'dashboard' || activeTab === 'governance' || activeTab === 'approve') && (
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-dark)' }}>
+              Recent Campaign Requests Review
+            </h2>
               <span className="badge-pending">{pendingRequestsCount} Pending</span>
             </div>
 
@@ -1129,8 +1294,11 @@ export function AdminDashboard() {
               </div>
             </div>
           </div>
+        )}
 
-          {/* SECTION 3: Smart Contract Fund Release */}
+      {/* SECTION 3: Smart Contract Fund Release & Dispute Governance */}
+      {(activeTab === 'dashboard' || activeTab === 'governance' || activeTab === 'release') && (
+        <div>
           <div id="release">
             <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-dark)', marginBottom: '16px' }}>
               Release Funds to Beneficiary (Screen 10)
@@ -1541,6 +1709,202 @@ export function AdminDashboard() {
         </div>
       )}
 
+      {/* TAB: User Management (Sidebar Menu -> Users) */}
+      {activeTab === 'users' && (
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-dark)', margin: 0 }}>
+                Platform User Management
+              </h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', margin: '4px 0 0 0' }}>
+                Full administrative supervision over registered donors, beneficiaries, and system accounts.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <span className="badge-approved" style={{ fontSize: '0.8rem', padding: '6px 12px' }}>
+                Total Accounts: {usersList.length || 7}
+              </span>
+            </div>
+          </div>
+
+          {/* User Feedback Alert */}
+          {userActionSuccess && (
+            <div style={{ backgroundColor: 'var(--primary-green-light)', border: '1px solid var(--primary-green-border)', borderRadius: 'var(--radius-sm)', padding: '10px 16px', color: 'var(--primary-green)', fontWeight: 600, fontSize: '0.85rem', marginBottom: '16px' }}>
+              ✓ {userActionSuccess}
+            </div>
+          )}
+
+          {/* User Filters & Search Bar */}
+          <div className="bridge-card" style={{ padding: '16px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: 1 }}>
+                <input
+                  type="text"
+                  placeholder="Search user by name, email, or wallet..."
+                  value={userSearchQuery}
+                  onChange={(e) => setUserSearchQuery(e.target.value)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-light)',
+                    fontSize: '0.88rem',
+                    minWidth: '260px',
+                    flex: 1,
+                  }}
+                />
+                <select
+                  value={userRoleFilter}
+                  onChange={(e) => setUserRoleFilter(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-light)',
+                    fontSize: '0.88rem',
+                    backgroundColor: '#ffffff',
+                  }}
+                >
+                  <option value="ALL">All Roles</option>
+                  <option value="DONOR">Donors</option>
+                  <option value="BENEFICIARY">Beneficiaries</option>
+                  <option value="ADMIN">Administrators</option>
+                </select>
+                <select
+                  value={userStatusFilter}
+                  onChange={(e) => setUserStatusFilter(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-light)',
+                    fontSize: '0.88rem',
+                    backgroundColor: '#ffffff',
+                  }}
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="SUSPENDED">Suspended</option>
+                </select>
+              </div>
+              <button
+                onClick={loadUsers}
+                className="btn-secondary"
+                style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+              >
+                🔄 Refresh Users
+              </button>
+            </div>
+          </div>
+
+          {/* Users Table */}
+          <div className="bridge-card" style={{ overflow: 'hidden' }}>
+            <div className="table-responsive">
+              <table style={{ width: '100%', minWidth: '750px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '14px 18px', fontWeight: 600 }}>User / Name</th>
+                    <th style={{ padding: '14px 18px', fontWeight: 600 }}>Email Address</th>
+                    <th style={{ padding: '14px 18px', fontWeight: 600 }}>Role</th>
+                    <th style={{ padding: '14px 18px', fontWeight: 600 }}>Wallet / Contact</th>
+                    <th style={{ padding: '14px 18px', fontWeight: 600 }}>Status</th>
+                    <th style={{ padding: '14px 18px', fontWeight: 600 }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                        No users match the selected filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map((u, idx) => (
+                      <tr
+                        key={u._id || idx}
+                        style={{
+                          borderBottom: idx === filteredUsers.length - 1 ? 'none' : '1px solid var(--border-light)',
+                          backgroundColor: '#ffffff',
+                        }}
+                      >
+                        <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--text-dark)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              backgroundColor: u.role === 'ADMIN' ? 'rgba(16, 185, 129, 0.15)' : u.role === 'BENEFICIARY' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(236, 72, 153, 0.15)',
+                              color: u.role === 'ADMIN' ? 'var(--primary-green)' : u.role === 'BENEFICIARY' ? 'var(--accent-blue)' : '#ec4899',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 800,
+                              fontSize: '0.82rem',
+                            }}>
+                              {(u.name || 'U')[0]}
+                            </div>
+                            <div>
+                              <div>{u.name || 'Unnamed User'}</div>
+                              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 400 }}>
+                                Joined {new Date(u.createdAt || Date.now()).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 18px', color: 'var(--text-muted)' }}>
+                          {u.email}
+                        </td>
+                        <td style={{ padding: '14px 18px' }}>
+                          <span
+                            style={{
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              padding: '3px 8px',
+                              borderRadius: '4px',
+                              backgroundColor: u.role === 'ADMIN' ? '#ecfdf5' : u.role === 'BENEFICIARY' ? '#eff6ff' : '#fdf2f8',
+                              color: u.role === 'ADMIN' ? '#047857' : u.role === 'BENEFICIARY' ? '#1d4ed8' : '#be185d',
+                              border: `1px solid ${u.role === 'ADMIN' ? '#a7f3d0' : u.role === 'BENEFICIARY' ? '#bfdbfe' : '#fbcfe8'}`,
+                            }}
+                          >
+                            {u.role}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 18px', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                          {u.walletAddress ? `${u.walletAddress.substring(0, 8)}...${u.walletAddress.substring(34)}` : (u.phone || 'None')}
+                        </td>
+                        <td style={{ padding: '14px 18px' }}>
+                          <span className={u.status === 'ACTIVE' ? 'badge-approved' : u.status === 'PENDING' ? 'badge-pending' : 'badge-rejected'} style={{ fontSize: '0.72rem' }}>
+                            {u.status || 'ACTIVE'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 18px' }}>
+                          {u.role !== 'ADMIN' && (
+                            <button
+                              onClick={() => handleToggleUserStatus(u._id, u.status || 'ACTIVE')}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '0.74rem',
+                                fontWeight: 600,
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                border: '1px solid var(--border-light)',
+                                backgroundColor: u.status === 'ACTIVE' ? '#fff1f2' : '#ecfdf5',
+                                color: u.status === 'ACTIVE' ? 'var(--danger-red)' : 'var(--primary-green)',
+                              }}
+                            >
+                              {u.status === 'ACTIVE' ? 'Suspend' : 'Activate'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TAB 3: Blockchain Record Viewer (Sprint 6) */}
       {activeTab === 'blockchain' && (
         <div>
@@ -1664,8 +2028,8 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {/* TAB 4: Audit Logs (Sprint 6) */}
-      {activeTab === 'audit' && (
+      {/* TAB 4: Audit Logs & Transaction Logs */}
+      {(activeTab === 'logs' || activeTab === 'audit') && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div>

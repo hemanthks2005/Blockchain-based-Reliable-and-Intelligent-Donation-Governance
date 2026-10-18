@@ -38,7 +38,7 @@ export function DashboardLayout({ children, activeTab: propActiveTab }) {
     { id: 'dashboard', label: 'Dashboard', icon: '📊', path: '/admin' },
     { id: 'verify', label: 'Verify Beneficiaries', icon: '🛡️', path: '/admin#verify' },
     { id: 'approve', label: 'Approve Campaigns', icon: '📋', path: '/admin#approve' },
-    { id: 'fund_release', label: 'Fund Release', icon: '💸', path: '/admin#release' },
+    { id: 'release', label: 'Fund Release', icon: '💸', path: '/admin#release' },
     { id: 'donations', label: 'View Donations', icon: '👁️', path: '/admin#donations' },
     { id: 'users', label: 'Users', icon: '👥', path: '/admin#users' },
     { id: 'logs', label: 'Transaction Logs', icon: '📜', path: '/admin#logs' },

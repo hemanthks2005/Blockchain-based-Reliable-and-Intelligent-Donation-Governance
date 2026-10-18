@@ -59,13 +59,14 @@ export function DonorDashboard() {
     }
   }, [activeUser]);
 
-  // Handle smooth scroll when navigating to #donations or #transactions
+  // Handle smooth scroll when navigating to #donations, #transactions, or #profile
   useEffect(() => {
     if (location.hash === '#donations' || location.hash === '#transactions') {
       const el = document.getElementById('donations-history-section');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    } else if (location.hash === '#profile') {
+      const el = document.getElementById('profile-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
   }, [location.hash]);
 
@@ -437,7 +438,7 @@ export function DonorDashboard() {
             }}
           >
             {/* Column 1: Identity & Blockchain Verification Card */}
-            <div className="bridge-card" style={{ padding: '28px' }}>
+            <div id="profile-section" className="bridge-card" style={{ padding: '28px' }}>
               {/* Avatar with Initials */}
               <div
                 style={{

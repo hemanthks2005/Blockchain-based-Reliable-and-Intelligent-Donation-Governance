@@ -33,12 +33,15 @@ export function BeneficiaryDashboard() {
     return '/images/hero_heart_hands.jpg';
   };
 
-  // Sync modal when navigation hash changes
+  // Sync modal & section when navigation hash changes
   useEffect(() => {
     if (location.hash === '#profile') {
       setShowProfileModal(true);
     } else if (location.hash === '#create') {
       setShowCreateModal(true);
+    } else if (location.hash === '#campaigns' || location.hash === '#requests' || location.hash === '#transactions') {
+      const el = document.getElementById('campaigns-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
   }, [location.hash]);
 
@@ -223,7 +226,7 @@ export function BeneficiaryDashboard() {
       </div>
 
       {/* My Campaigns / Requests Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+      <div id="campaigns-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-dark)' }}>
           My Funding Requests
         </h2>

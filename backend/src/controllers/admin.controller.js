@@ -110,3 +110,32 @@ export const getTransactionReport = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getUsers = async (req, res, next) => {
+  try {
+    const { page, limit, role, status, search } = req.query;
+    const result = await adminService.getAllUsers({ page, limit, role, status, search });
+    res.status(200).json({
+      success: true,
+      data: result.users,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUserStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const updated = await adminService.updateUserStatus(id, status);
+    res.status(200).json({
+      success: true,
+      data: updated,
+      message: `User status updated to ${status}`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

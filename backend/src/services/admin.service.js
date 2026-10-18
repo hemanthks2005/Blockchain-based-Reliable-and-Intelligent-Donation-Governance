@@ -248,4 +248,160 @@ export const adminService = {
       records,
     };
   },
+
+  /**
+   * 5. Get Users list for User Management
+   */
+  async getAllUsers({ page = 1, limit = 20, role, status, search } = {}) {
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+
+    if (isDbConnected()) {
+      const filter = {};
+      if (role && role !== 'ALL') filter.role = role.toUpperCase();
+      if (status && status !== 'ALL') filter.status = status.toUpperCase();
+      if (search) {
+        filter.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+          { walletAddress: { $regex: search, $options: 'i' } },
+        ];
+      }
+
+      const total = await User.countDocuments(filter);
+      const users = await User.find(filter)
+        .select('-passwordHash')
+        .sort({ createdAt: -1 })
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum);
+
+      return {
+        users,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          pages: Math.ceil(total / limitNum) || 1,
+        },
+      };
+    }
+
+    const demoUsers = [
+      {
+        _id: '67abc1234567890123456781',
+        name: 'Hemanth Donor',
+        email: 'donor@bridge.org',
+        role: 'DONOR',
+        walletAddress: '0x71C95911E9A5D330f4D621457224213B443d348a',
+        phone: '+91 98765 43210',
+        status: 'ACTIVE',
+        totalDonations: '₹48,000',
+        createdAt: new Date(Date.now() - 30 * 86400000),
+      },
+      {
+        _id: '67abc1234567890123456782',
+        name: 'NGO Hope',
+        email: 'contact@ngohope.org',
+        role: 'BENEFICIARY',
+        walletAddress: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        phone: '+91 98765 43210',
+        status: 'ACTIVE',
+        totalDonations: '₹10,00,000',
+        createdAt: new Date(Date.now() - 25 * 86400000),
+      },
+      {
+        _id: '67abc1234567890123456783',
+        name: 'System Governance Admin',
+        email: 'admin@bridge.org',
+        role: 'ADMIN',
+        walletAddress: '0xbDA5747bFD65F08deb54cb465eB87D40e51B197E',
+        phone: '+91 91234 56789',
+        status: 'ACTIVE',
+        totalDonations: 'N/A',
+        createdAt: new Date(Date.now() - 60 * 86400000),
+      },
+      {
+        _id: '67abc1234567890123456784',
+        name: 'Care Foundation',
+        email: 'support@carefoundation.org',
+        role: 'BENEFICIARY',
+        walletAddress: '0x2546BcD3c84621e976D8185a91A922aE77ECEc30',
+        phone: '+91 91234 56789',
+        status: 'PENDING',
+        totalDonations: '₹8,00,000',
+        createdAt: new Date(Date.now() - 15 * 86400000),
+      },
+      {
+        _id: '67abc1234567890123456785',
+        name: 'Water4All Global',
+        email: 'info@water4all.org',
+        role: 'BENEFICIARY',
+        walletAddress: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
+        phone: '+91 94455 66778',
+        status: 'ACTIVE',
+        totalDonations: '₹5,00,000',
+        createdAt: new Date(Date.now() - 20 * 86400000),
+      },
+      {
+        _id: '67abc1234567890123456786',
+        name: 'Aarav Mehta',
+        email: 'aarav.mehta@example.com',
+        role: 'DONOR',
+        walletAddress: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
+        phone: '+91 99887 76655',
+        status: 'ACTIVE',
+        totalDonations: '₹80,000',
+        createdAt: new Date(Date.now() - 10 * 86400000),
+      },
+      {
+        _id: '67abc1234567890123456787',
+        name: 'Priya Sundaram',
+        email: 'priya.s@example.com',
+        role: 'DONOR',
+        walletAddress: '0x9965507D1a55bcC2695C58ba16FB37d819B0A4df',
+        phone: '+91 98877 66554',
+        status: 'ACTIVE',
+        totalDonations: '₹40,000',
+        createdAt: new Date(Date.now() - 5 * 86400000),
+      },
+    ];
+
+    let filtered = [...demoUsers];
+    if (role && role !== 'ALL') {
+      filtered = filtered.filter((u) => u.role.toUpperCase() === role.toUpperCase());
+    }
+    if (status && status !== 'ALL') {
+      filtered = filtered.filter((u) => u.status.toUpperCase() === status.toUpperCase());
+    }
+    if (search) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter((u) =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        (u.walletAddress && u.walletAddress.toLowerCase().includes(q))
+      );
+    }
+
+    return {
+      users: filtered,
+      pagination: {
+        total: filtered.length,
+        page: 1,
+        limit: 50,
+        pages: 1,
+      },
+    };
+  },
+
+  async updateUserStatus(id, newStatus) {
+    if (isDbConnected()) {
+      const updated = await User.findByIdAndUpdate(
+        id,
+        { status: newStatus },
+        { new: true }
+      ).select('-passwordHash');
+      return updated;
+    }
+    return { _id: id, status: newStatus };
+  },
 };
