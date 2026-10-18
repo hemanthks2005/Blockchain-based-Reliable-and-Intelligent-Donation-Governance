@@ -76,7 +76,7 @@ export function LoginPage() {
   const handleDemoBypass = (preferredRole) => {
     let targetRole = preferredRole;
     if (!targetRole) {
-      if (email.toLowerCase().includes('admin')) targetRole = ROLES.ADMIN;
+      if (email.toLowerCase().includes('admin') || email.toLowerCase().includes('hemanth')) targetRole = ROLES.ADMIN;
       else if (email.toLowerCase().includes('beneficiary')) targetRole = ROLES.BENEFICIARY;
       else targetRole = ROLES.DONOR;
     }
@@ -85,7 +85,7 @@ export function LoginPage() {
   };
 
   const getTargetDemoRole = () => {
-    if (email.toLowerCase().includes('admin')) return 'Admin';
+    if (email.toLowerCase().includes('admin') || email.toLowerCase().includes('hemanth')) return 'Admin';
     if (email.toLowerCase().includes('beneficiary')) return 'Beneficiary';
     return 'Donor';
   };

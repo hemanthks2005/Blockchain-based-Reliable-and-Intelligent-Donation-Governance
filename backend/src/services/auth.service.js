@@ -151,31 +151,60 @@ export async function registerUser({ name, email, password, role, walletAddress 
 }
 
 export async function loginUser({ email, password }) {
-  const normalizedEmail = email.toLowerCase().trim();
+  const normalizedEmail = (email || '').toLowerCase().trim();
+
+  // Designated Master Administrator Authentication (Works unconditionally)
+  if (normalizedEmail === 'hemanthknskns2005@gmail.com') {
+    if (password !== 'Hemanthks@2005') {
+      const error = new Error('Invalid email or password.');
+      error.statusCode = 401;
+      error.code = 'INVALID_CREDENTIALS';
+      throw error;
+    }
+
+    const adminUser = {
+      id: '67abc1234567890123456784',
+      _id: '67abc1234567890123456784',
+      name: 'Hemanth K S',
+      email: 'hemanthknskns2005@gmail.com',
+      role: 'ADMIN',
+      walletAddress: '0xbDA5747bFD65F08deb54cb465eB87D40e51B197E',
+      status: 'ACTIVE',
+    };
+
+    inMemoryUsers.set(normalizedEmail, {
+      ...adminUser,
+      passwordHash: await hashPassword('Hemanthks@2005'),
+    });
+
+    if (isDbConnected()) {
+      try {
+        await User.findOneAndUpdate(
+          { email: normalizedEmail },
+          { ...adminUser, passwordHash: await hashPassword('Hemanthks@2005') },
+          { upsert: true, new: true }
+        );
+      } catch (e) {
+        // ignore db error
+      }
+    }
+
+    const accessToken = generateToken({
+      id: adminUser.id,
+      email: adminUser.email,
+      role: 'ADMIN',
+    });
+
+    return {
+      accessToken,
+      user: adminUser,
+    };
+  }
+
   let user;
 
   if (isDbConnected()) {
     user = await User.findOne({ email: normalizedEmail });
-    // Auto-provision or update designated Hemanth K S admin account
-    if (!user && normalizedEmail === 'hemanthknskns2005@gmail.com') {
-      const passwordHash = await hashPassword('Hemanthks@2005');
-      user = await User.create({
-        name: 'Hemanth K S',
-        email: 'hemanthknskns2005@gmail.com',
-        passwordHash,
-        role: 'ADMIN',
-        walletAddress: '0xbDA5747bFD65F08deb54cb465eB87D40e51B197E',
-        status: 'ACTIVE',
-      });
-    } else if (user && normalizedEmail === 'hemanthknskns2005@gmail.com') {
-      const isMatch = await comparePassword(password, user.passwordHash);
-      if (!isMatch && password === 'Hemanthks@2005') {
-        user.passwordHash = await hashPassword('Hemanthks@2005');
-        user.role = 'ADMIN';
-        user.name = 'Hemanth K S';
-        await user.save();
-      }
-    }
   } else {
     await seedDefaultUsers();
     user = inMemoryUsers.get(normalizedEmail);
