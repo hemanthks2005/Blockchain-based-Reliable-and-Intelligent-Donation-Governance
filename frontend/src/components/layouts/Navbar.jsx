@@ -25,9 +25,11 @@ export function Navbar() {
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        backgroundColor: '#ffffff',
-        borderBottom: '1px solid var(--border-light)',
-        boxShadow: 'var(--shadow-sm)',
+        backgroundColor: 'rgba(255, 255, 255, 0.88)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+        boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04)',
       }}
     >
       <div
@@ -43,14 +45,17 @@ export function Navbar() {
         <BridgeLogo size="md" to="/" />
 
         {/* Desktop Center Navigation Links */}
-        <nav className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+        <nav className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Link
             to="/"
             style={{
-              fontSize: '0.95rem',
+              fontSize: '0.92rem',
               fontWeight: isActive('/') ? 600 : 500,
               color: isActive('/') ? 'var(--primary-green)' : 'var(--text-muted)',
-              transition: 'color 0.15s',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-sm)',
+              background: isActive('/') ? 'var(--primary-green-light)' : 'transparent',
+              transition: 'all 0.15s ease',
             }}
           >
             Home
@@ -58,10 +63,13 @@ export function Navbar() {
           <Link
             to="/campaigns"
             style={{
-              fontSize: '0.95rem',
+              fontSize: '0.92rem',
               fontWeight: isActive('/campaigns') ? 600 : 500,
               color: isActive('/campaigns') ? 'var(--primary-green)' : 'var(--text-muted)',
-              transition: 'color 0.15s',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-sm)',
+              background: isActive('/campaigns') ? 'var(--primary-green-light)' : 'transparent',
+              transition: 'all 0.15s ease',
             }}
           >
             Campaigns
@@ -69,9 +77,12 @@ export function Navbar() {
           <a
             href="/#about"
             style={{
-              fontSize: '0.95rem',
+              fontSize: '0.92rem',
               fontWeight: 500,
               color: 'var(--text-muted)',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-sm)',
+              transition: 'all 0.15s ease',
             }}
           >
             About
@@ -79,9 +90,12 @@ export function Navbar() {
           <a
             href="/#contact"
             style={{
-              fontSize: '0.95rem',
+              fontSize: '0.92rem',
               fontWeight: 500,
               color: 'var(--text-muted)',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-sm)',
+              transition: 'all 0.15s ease',
             }}
           >
             Contact
@@ -92,6 +106,9 @@ export function Navbar() {
               fontSize: '0.85rem',
               fontWeight: 500,
               color: 'var(--text-light)',
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-sm)',
+              transition: 'all 0.15s ease',
             }}
           >
             Diagnostics
