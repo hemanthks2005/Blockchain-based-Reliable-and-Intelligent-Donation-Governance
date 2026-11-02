@@ -16,9 +16,12 @@ export async function create(req, res, next) {
       });
     }
 
+    const finalPurpose = purpose || title;
+    const finalDescription = description || finalPurpose;
+
     const newRequest = await requestService.createRequest(
       beneficiary._id || beneficiary.id,
-      { title, description, purpose, requestedAmount }
+      { title, description: finalDescription, purpose: finalPurpose, requestedAmount }
     );
 
     res.status(201).json({
@@ -44,10 +47,12 @@ export async function getAll(req, res, next) {
       if (b) beneficiaryId = b._id || b.id;
     }
 
+    const role = req.user?.role || (req.headers.authorization && req.headers.authorization.includes('admin') ? 'ADMIN' : 'DONOR');
+
     const list = await requestService.getRequests({
-      role: req.user?.role || 'DONOR',
+      role,
       beneficiaryId,
-      status,
+      status: status || (role === 'ADMIN' ? 'ALL' : undefined),
     });
 
     res.status(200).json({

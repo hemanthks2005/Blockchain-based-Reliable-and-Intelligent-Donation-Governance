@@ -150,80 +150,127 @@ function seedDefaultRequests() {
 seedDefaultRequests();
 
 export async function createRequest(beneficiaryId, { title, description, purpose, requestedAmount }) {
-  if (!title || !description || !purpose || !requestedAmount) {
-    const err = new Error('title, description, purpose, and requestedAmount are required');
+  if (!title || !requestedAmount) {
+    const err = new Error('title and requestedAmount are required');
     err.statusCode = 400;
     throw err;
   }
 
+  const finalPurpose = purpose || title;
+  const finalDescription = description || finalPurpose;
+
+  // Resolve beneficiary name
+  let beneficiaryName = 'NGO Hope';
   if (isDbConnected()) {
-    return await FundRequest.create({
-      beneficiaryId,
-      title,
-      description,
-      purpose,
-      requestedAmount: Number(requestedAmount),
-      status: 'PENDING',
-    });
-  } else {
-    seedDefaultRequests();
-    const newId = new mongoose.Types.ObjectId().toString();
-    const newReq = {
-      _id: newId,
-      beneficiaryId: beneficiaryId.toString(),
-      beneficiaryName: 'NGO Hope',
-      title,
-      description,
-      purpose,
-      requestedAmount: Number(requestedAmount),
-      approvedAmount: 0,
-      status: 'PENDING',
-      reviewedBy: null,
-      reviewRemarks: null,
-      reviewedAt: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    inMemoryRequests.set(newId, newReq);
-    return newReq;
+    try {
+      const { Beneficiary } = await import('../models/Beneficiary.js');
+      const bDoc = await Beneficiary.findById(beneficiaryId);
+      if (bDoc?.name) beneficiaryName = bDoc.name;
+    } catch (_e) {}
   }
+
+  seedDefaultRequests();
+  const newId = new mongoose.Types.ObjectId().toString();
+  let createdDoc = null;
+
+  if (isDbConnected()) {
+    try {
+      createdDoc = await FundRequest.create({
+        beneficiaryId,
+        beneficiaryName,
+        title,
+        description: finalDescription,
+        purpose: finalPurpose,
+        requestedAmount: Number(requestedAmount),
+        status: 'PENDING',
+      });
+      await createdDoc.populate('beneficiaryId', 'name contactEmail verificationStatus');
+    } catch (err) {
+      logger.warn(`Could not save FundRequest to DB: ${err.message}`);
+    }
+  }
+
+  const inMemReq = {
+    _id: createdDoc ? createdDoc._id.toString() : newId,
+    id: createdDoc ? createdDoc._id.toString() : newId,
+    beneficiaryId: beneficiaryId.toString(),
+    beneficiaryName,
+    title,
+    description: finalDescription,
+    purpose: finalPurpose,
+    requestedAmount: Number(requestedAmount),
+    approvedAmount: 0,
+    collectedAmount: 0,
+    status: 'PENDING',
+    reviewedBy: null,
+    reviewRemarks: null,
+    reviewedAt: null,
+    createdAt: createdDoc ? createdDoc.createdAt : new Date(),
+    updatedAt: createdDoc ? createdDoc.updatedAt : new Date(),
+  };
+  inMemoryRequests.set(inMemReq._id, inMemReq);
+
+  return createdDoc || inMemReq;
 }
 
 export async function getRequests({ role, beneficiaryId, status } = {}) {
+  let dbItems = null;
+
   if (isDbConnected()) {
-    let filter = {};
-    if (role === 'BENEFICIARY' && beneficiaryId) {
-      filter.beneficiaryId = beneficiaryId;
+    try {
+      let filter = {};
+      if (role === 'BENEFICIARY' && beneficiaryId) {
+        filter.beneficiaryId = beneficiaryId;
+      }
+      if (status && status !== 'ALL') {
+        filter.status = status;
+      } else if (role === 'DONOR' && !status) {
+        // Donors see approved requests by default
+        filter.status = 'APPROVED';
+      }
+      dbItems = await FundRequest.find(filter)
+        .populate('beneficiaryId', 'name contactEmail verificationStatus')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      if (Array.isArray(dbItems) && dbItems.length > 0) {
+        for (const item of dbItems) {
+          if (!item.beneficiaryName && item.beneficiaryId?.name) {
+            item.beneficiaryName = item.beneficiaryId.name;
+          }
+        }
+        return dbItems;
+      }
+    } catch (err) {
+      logger.warn(`Error loading FundRequests from DB: ${err.message}`);
     }
-    if (status) {
-      filter.status = status;
-    } else if (role === 'DONOR') {
-      // Donors see approved requests by default
-      filter.status = 'APPROVED';
-    }
-    return await FundRequest.find(filter).populate('beneficiaryId', 'name contactEmail verificationStatus').sort({ createdAt: -1 });
-  } else {
-    seedDefaultRequests();
-    let list = Array.from(inMemoryRequests.values());
-    if (role === 'BENEFICIARY' && beneficiaryId) {
-      list = list.filter((r) => r.beneficiaryId === beneficiaryId.toString());
-    }
-    if (status) {
-      list = list.filter((r) => r.status === status);
-    } else if (role === 'DONOR') {
-      list = list.filter((r) => r.status === 'APPROVED');
-    }
-    return list;
   }
+
+  // Resilient In-Memory Fallback
+  seedDefaultRequests();
+  let list = Array.from(inMemoryRequests.values());
+  if (role === 'BENEFICIARY' && beneficiaryId) {
+    list = list.filter((r) => r.beneficiaryId === beneficiaryId.toString());
+  }
+  if (status && status !== 'ALL') {
+    list = list.filter((r) => r.status === status);
+  } else if (role === 'DONOR' && !status) {
+    list = list.filter((r) => r.status === 'APPROVED');
+  }
+  list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return list;
 }
 
 export async function getRequestById(id) {
   if (isDbConnected()) {
-    return await FundRequest.findById(id).populate('beneficiaryId', 'name contactEmail verificationStatus');
-  } else {
-    seedDefaultRequests();
-    return inMemoryRequests.get(id.toString()) || null;
+    try {
+      const doc = await FundRequest.findById(id).populate('beneficiaryId', 'name contactEmail verificationStatus');
+      if (doc) return doc;
+    } catch (_e) {}
   }
+
+  seedDefaultRequests();
+  return inMemoryRequests.get(id.toString()) || null;
 }
 
 export async function updateRequestStatus(id, { status, remarks, approvedAmount }, adminId) {

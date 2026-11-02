@@ -62,11 +62,12 @@ export function BeneficiaryDashboard() {
           verificationStatus: 'VERIFIED',
           description: 'Education and health support organization for underprivileged youth',
         })),
-        govService.fetchRequests().catch(() => []),
+        govService.fetchRequests('ALL').catch(() => []),
       ]);
 
       setProfile(profData);
-      setRequests(reqsData.length > 0 ? reqsData : [
+      const safeReqs = Array.isArray(reqsData) ? reqsData : (reqsData?.requests || []);
+      setRequests(safeReqs.length > 0 ? safeReqs : [
         { _id: '1', title: 'Education for Every Child', requestedAmount: 1000000, approvedAmount: 850000, status: 'APPROVED' },
         { _id: '2', title: 'Medical Support', requestedAmount: 800000, approvedAmount: 0, status: 'PENDING' },
         { _id: '3', title: 'Clean Water Initiative', requestedAmount: 600000, approvedAmount: 375000, status: 'APPROVED' },
@@ -87,12 +88,19 @@ export function BeneficiaryDashboard() {
     if (!newRequest.title || !newRequest.requestedAmount) return;
 
     try {
-      const created = await govService.createFundRequest(newRequest);
+      const payload = {
+        title: newRequest.title.trim(),
+        purpose: (newRequest.purpose || newRequest.title).trim(),
+        description: (newRequest.description || newRequest.purpose || newRequest.title).trim(),
+        requestedAmount: Number(newRequest.requestedAmount),
+      };
+      const created = await govService.createFundRequest(payload);
       setRequests((prev) => [created, ...prev]);
       setShowCreateModal(false);
       setNewRequest({ title: '', purpose: '', description: '', requestedAmount: '' });
       setFeedbackMsg('Funding request created successfully and queued for Admin review!');
       setTimeout(() => setFeedbackMsg(null), 5000);
+      loadData();
     } catch (err) {
       alert(err.message || 'Failed to create request');
     }

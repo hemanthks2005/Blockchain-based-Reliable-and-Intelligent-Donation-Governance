@@ -49,17 +49,62 @@ export const adminService = {
   },
 
   /**
-   * 4. Get all donations for monitoring (GET /admin/donations)
+   * 4. Get all campaign requests for admin review (GET /admin/requests with fallback to /requests?status=ALL)
+   */
+  async getRequests(params = {}) {
+    const queryParams = { status: 'ALL', ...params };
+    const query = new URLSearchParams(queryParams).toString();
+    const url = `${ADMIN_URL}/requests?${query}`;
+    try {
+      const res = await fetch(url, {
+        headers: { ...getAuthHeader() },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.data) {
+          return Array.isArray(data.data) ? data.data : (data.data.requests || []);
+        }
+      }
+    } catch (_e) {}
+
+    // Resilient fallback to /requests?status=ALL
+    try {
+      const res2 = await fetch(`${API_URL}/requests?status=ALL`, {
+        headers: { ...getAuthHeader() },
+      });
+      const data2 = await res2.json();
+      return Array.isArray(data2.data) ? data2.data : (data2.data?.requests || []);
+    } catch (_e2) {
+      return [];
+    }
+  },
+
+  /**
+   * 5. Get all donations for monitoring (GET /admin/donations with fallback)
    */
   async getDonations(params = {}) {
     const query = new URLSearchParams(params).toString();
     const url = query ? `${ADMIN_URL}/donations?${query}` : `${ADMIN_URL}/donations`;
-    const res = await fetch(url, {
-      headers: { ...getAuthHeader() },
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'Failed to fetch donations for admin');
-    return data.data || [];
+    try {
+      const res = await fetch(url, {
+        headers: { ...getAuthHeader() },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return Array.isArray(data.data) ? data.data : (data.data?.donations || []);
+      }
+    } catch (_e) {}
+
+    // Fallback to /donations
+    try {
+      const res2 = await fetch(`${API_URL}/donations?${query}`, {
+        headers: { ...getAuthHeader() },
+      });
+      const data2 = await res2.json();
+      return Array.isArray(data2.data) ? data2.data : (data2.data?.donations || []);
+    } catch (_e2) {
+      return [];
+    }
   },
 
   /**

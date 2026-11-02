@@ -55,17 +55,22 @@ export function DonationModal({ isOpen, onClose, campaign, onDonateSuccess }) {
         orderData = await donationService.createRazorpayOrder({
           requestId: campaign._id || campaign.id || '67abc1234567890123456801',
           amount: parsedAmount,
+          donorId: activeUser?._id || activeUser?.id,
+          donorName: activeUser?.name || 'Generous Donor',
+          donorEmail: activeUser?.email || '',
         });
       } catch (backendErr) {
         console.warn('Backend order creation offline or network issue, using direct Razorpay gateway:', backendErr);
         orderData = {
-          donationId: campaign._id || campaign.id || '67abc1234567890123456801',
+          donationId: 'don_' + Date.now(),
           amount: parsedAmount,
           amountInPaise: parsedAmount * 100,
           currency: 'INR',
           keyId: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_TpHSB9BBWmAuow',
           campaignTitle: campaign.title,
           beneficiaryName: campaign.beneficiary || campaign.beneficiaryName || 'NGO Beneficiary',
+          donorName: activeUser?.name || 'Generous Donor',
+          donorEmail: activeUser?.email || '',
         };
       }
 
@@ -92,6 +97,15 @@ export function DonationModal({ isOpen, onClose, campaign, onDonateSuccess }) {
                   razorpayOrderId: response.razorpay_order_id || orderData.orderId,
                   razorpayPaymentId: response.razorpay_payment_id,
                   razorpaySignature: response.razorpay_signature,
+                  amount: parsedAmount,
+                  requestId: campaign._id || campaign.id,
+                  campaignTitle: campaign.title,
+                  beneficiaryName: campaign.beneficiary || campaign.beneficiaryName || 'NGO Beneficiary',
+                  beneficiaryId: campaign.beneficiaryId || '67abc1234567890123456791',
+                  beneficiaryAddress: campaign.beneficiaryAddress,
+                  donorId: activeUser?._id || activeUser?.id || '67abc1234567890123456781',
+                  donorName: activeUser?.name || 'Generous Donor',
+                  donorEmail: activeUser?.email || '',
                 });
               } catch (vErr) {
                 console.warn('Backend verification call offline, generating acknowledgement locally:', vErr);

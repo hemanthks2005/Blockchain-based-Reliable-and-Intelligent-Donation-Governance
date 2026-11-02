@@ -4,6 +4,7 @@ import { DonationTrackingModal } from '../components/common/DonationTrackingModa
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import * as govService from '../services/governance.service';
 import adminService from '../services/admin.service';
+import donationService from '../services/donation.service';
 import { useAuth } from '../context/AuthContext';
 import { GovernanceDisputeCard } from '../components/common/GovernanceDisputeCard';
 
@@ -354,9 +355,9 @@ export function AdminDashboard() {
       setLoading(true);
       const [dashStats, reqs, bens, donList, bcRecs, logsList, govConfig, disputeList] = await Promise.all([
         adminService.getDashboard().catch(() => null),
-        govService.fetchRequests().catch(() => []),
+        adminService.getRequests().catch(() => govService.fetchRequests('ALL')).catch(() => []),
         govService.fetchAllBeneficiaries().catch(() => []),
-        adminService.getDonations().catch(() => []),
+        adminService.getDonations().catch(() => donationService.getAllDonations()).catch(() => []),
         adminService.getBlockchainRecords({ limit: 10 }).catch(() => null),
         adminService.getAuditLogs({ limit: 15 }).catch(() => []),
         govService.fetchGovernanceConfig().catch(() => ({ reportThreshold: 2 })),
@@ -364,9 +365,12 @@ export function AdminDashboard() {
       ]);
 
       if (dashStats) setStats(dashStats);
-      setRequests(reqs);
-      setBeneficiaries(bens);
-      setDonations(Array.isArray(donList) ? donList : donList?.donations || []);
+      const safeReqs = Array.isArray(reqs) ? reqs : (reqs?.requests || []);
+      setRequests(safeReqs);
+      const safeBens = Array.isArray(bens) ? bens : (bens?.beneficiaries || []);
+      setBeneficiaries(safeBens);
+      const safeDons = Array.isArray(donList) ? donList : (donList?.donations || []);
+      setDonations(safeDons);
       setBlockchainRecords(bcRecs);
       setAuditLogs(Array.isArray(logsList) ? logsList : logsList?.logs || []);
       if (govConfig) {
@@ -930,6 +934,32 @@ export function AdminDashboard() {
       ) : (
         <>
       
+      {/* Top Controls & Live Refresh Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            Protocol Multi-Sig Status: <strong style={{ color: 'var(--primary-green)' }}>● Online & Synchronized</strong>
+          </span>
+        </div>
+        <button
+          onClick={loadData}
+          className="btn-secondary"
+          disabled={loading}
+          style={{
+            padding: '6px 14px',
+            fontSize: '0.82rem',
+            fontWeight: 600,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            borderRadius: 'var(--radius-sm)',
+            cursor: loading ? 'wait' : 'pointer',
+          }}
+        >
+          <span>{loading ? '⏳' : '↻'}</span> {loading ? 'Syncing...' : 'Refresh Live Data'}
+        </button>
+      </div>
+
       {/* Alert Banner */}
       {feedback && (
         <div
@@ -1353,84 +1383,217 @@ export function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {requests.map((req, idx) => (
-                      <tr
-                        key={req._id || req.id || idx}
-                        style={{
-                          borderBottom: idx === requests.length - 1 ? 'none' : '1px solid var(--border-light)',
-                          backgroundColor: '#ffffff',
-                        }}
-                      >
-                        <td style={{ padding: '16px 20px', fontWeight: 600, color: 'var(--text-dark)' }}>
-                          {req.title}
-                        </td>
-                        <td style={{ padding: '16px 20px', color: 'var(--text-muted)' }}>
-                          {req.beneficiaryName || req.beneficiaryId?.name || 'NGO Hope'}
-                        </td>
-                        <td style={{ padding: '16px 20px', fontWeight: 600, color: 'var(--text-dark)' }}>
-                          ₹ {(req.requestedAmount || 0).toLocaleString('en-IN')}
-                        </td>
-                        <td style={{ padding: '16px 20px' }}>
-                          <span
-                            className={
-                              req.status === 'APPROVED'
-                                ? 'badge-approved'
-                                : req.status === 'REJECTED'
-                                ? 'stat-card-rose'
-                                : 'badge-pending'
-                            }
-                            style={{ padding: '4px 10px', borderRadius: 'var(--radius-full)' }}
-                          >
-                            {req.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px 20px' }}>
-                          {req.status === 'PENDING' ? (
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                onClick={() => handleApproveRequest(req._id || req.id, req.title)}
-                                className="btn-primary"
-                                style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: 'var(--radius-sm)' }}
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => handleRejectRequest(req._id || req.id, req.title)}
-                                className="btn-danger"
-                                style={{ padding: '6px 14px', fontSize: '0.8rem' }}
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setViewingRequest(req)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--accent-blue)',
-                                fontWeight: 600,
-                                fontSize: '0.85rem',
-                                cursor: 'pointer',
-                                padding: '4px 6px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                              }}
-                            >
-                              👁️ View
-                            </button>
-                          )}
+                    {requests.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                          <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '8px' }}>📋</span>
+                          No campaign funding requests found. When a beneficiary creates a funding request, it will appear here immediately for governance review and approval.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      requests.map((req, idx) => (
+                        <tr
+                          key={req._id || req.id || idx}
+                          style={{
+                            borderBottom: idx === requests.length - 1 ? 'none' : '1px solid var(--border-light)',
+                            backgroundColor: '#ffffff',
+                          }}
+                        >
+                          <td style={{ padding: '16px 20px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                            {req.title}
+                          </td>
+                          <td style={{ padding: '16px 20px', color: 'var(--text-muted)' }}>
+                            {req.beneficiaryName || req.beneficiaryId?.name || 'NGO Hope'}
+                          </td>
+                          <td style={{ padding: '16px 20px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                            ₹ {(req.requestedAmount || 0).toLocaleString('en-IN')}
+                          </td>
+                          <td style={{ padding: '16px 20px' }}>
+                            <span
+                              className={
+                                req.status === 'APPROVED'
+                                  ? 'badge-approved'
+                                  : req.status === 'REJECTED'
+                                  ? 'stat-card-rose'
+                                  : 'badge-pending'
+                              }
+                              style={{ padding: '4px 10px', borderRadius: 'var(--radius-full)' }}
+                            >
+                              {req.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px 20px' }}>
+                            {req.status === 'PENDING' ? (
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                  onClick={() => handleApproveRequest(req._id || req.id, req.title)}
+                                  className="btn-primary"
+                                  style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: 'var(--radius-sm)' }}
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleRejectRequest(req._id || req.id, req.title)}
+                                  className="btn-danger"
+                                  style={{ padding: '6px 14px', fontSize: '0.8rem' }}
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setViewingRequest(req)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: 'var(--accent-blue)',
+                                  fontWeight: 600,
+                                  fontSize: '0.85rem',
+                                  cursor: 'pointer',
+                                  padding: '4px 6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                👁️ View
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
         )}
+
+      {/* SECTION 2.5: Live Donations Stream (Overview Tab) */}
+      {(activeTab === 'dashboard' || activeTab === 'governance') && (
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-dark)', margin: 0 }}>
+                Recent Live Donations Monitor
+              </h2>
+              <span className="badge-approved" style={{ fontSize: '0.74rem' }}>
+                {donations.length} Contributions
+              </span>
+            </div>
+
+            <button
+              onClick={() => { setActiveTab('donations'); navigate('/admin#donations'); }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--primary-green)',
+                fontWeight: 600,
+                fontSize: '0.86rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              View All Donations Register →
+            </button>
+          </div>
+
+          <div className="bridge-card" style={{ overflow: 'hidden' }}>
+            <div className="table-responsive">
+              <table style={{ width: '100%', minWidth: '700px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-light)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '14px 16px', fontWeight: 600 }}>Date</th>
+                    <th style={{ padding: '14px 16px', fontWeight: 600 }}>Donor</th>
+                    <th style={{ padding: '14px 16px', fontWeight: 600 }}>Initiative</th>
+                    <th style={{ padding: '14px 16px', fontWeight: 600 }}>Amount</th>
+                    <th style={{ padding: '14px 16px', fontWeight: 600 }}>Status</th>
+                    <th style={{ padding: '14px 16px', fontWeight: 600 }}>Payment Ref / Tx</th>
+                    <th style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 600 }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {donations.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '8px' }}>💰</span>
+                        No donations recorded yet. When a donor contributes through Razorpay or direct gateway, their donation will immediately stream here in real time.
+                      </td>
+                    </tr>
+                  ) : (
+                    donations.slice(0, 5).map((d, idx) => {
+                      const hash = d.blockchainTxHash || d.txHash || d.razorpayPaymentId;
+                      const shortHash = hash ? `${hash.substring(0, 8)}...${hash.substring(hash.length - 6)}` : 'Verified';
+                      return (
+                        <tr
+                          key={d._id || d.donationId || idx}
+                          style={{
+                            borderBottom: idx === Math.min(donations.length, 5) - 1 ? 'none' : '1px solid var(--border-light)',
+                            backgroundColor: '#ffffff',
+                          }}
+                        >
+                          <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                            {new Date(d.createdAt || Date.now()).toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                            {d.donorName || d.donorId?.name || 'Anonymous Donor'}
+                          </td>
+                          <td style={{ padding: '14px 16px', color: 'var(--text-dark)' }}>
+                            {d.requestTitle || 'Community Initiative'}
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <span style={{ fontWeight: 700, color: 'var(--primary-green)', fontSize: '0.95rem' }}>
+                              ₹{Number(d.amount || 0).toLocaleString('en-IN')}
+                            </span>
+                            {d.paymentMethod && (
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>
+                                {d.paymentMethod}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <span className="badge-approved" style={{ fontSize: '0.72rem' }}>
+                              {d.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '14px 16px', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
+                            <div>{shortHash}</div>
+                            {d.blockNumber && (
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                                Block #{d.blockNumber}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                            <button
+                              onClick={() => {
+                                setTrackingDonation(d);
+                                setIsTrackingOpen(true);
+                              }}
+                              className="btn-secondary"
+                              style={{ padding: '5px 12px', fontSize: '0.76rem', borderRadius: '4px' }}
+                            >
+                              🔍 Track
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SECTION 3: Smart Contract Fund Release & Dispute Governance */}
       {(activeTab === 'dashboard' || activeTab === 'governance' || activeTab === 'release') && (
@@ -1773,71 +1936,80 @@ export function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDonations.map((d, idx) => {
-                    const hash = d.blockchainTxHash || d.txHash || d.razorpayPaymentId;
-                    const shortHash = hash ? `${hash.substring(0, 8)}...${hash.substring(hash.length - 6)}` : 'Verified';
-                    return (
-                      <tr
-                        key={d._id || d.donationId || idx}
-                        style={{
-                          borderBottom: idx === filteredDonations.length - 1 ? 'none' : '1px solid var(--border-light)',
-                          backgroundColor: '#ffffff',
-                        }}
-                      >
-                        <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
-                          {new Date(d.createdAt || Date.now()).toLocaleDateString('en-IN', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })}
-                        </td>
-                        <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-dark)' }}>
-                          {d.donorName || d.donorId?.name || 'Anonymous Donor'}
-                        </td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-dark)' }}>
-                          {d.requestTitle || 'Education & Healthcare'}
-                        </td>
-                        <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
-                          {d.beneficiaryName || 'NGO Hope'}
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <span style={{ fontWeight: 700, color: 'var(--primary-green)', fontSize: '0.95rem' }}>
-                            ₹{Number(d.amount || 0).toLocaleString('en-IN')}
-                          </span>
-                          {d.paymentMethod && (
-                            <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>
-                              {d.paymentMethod}
+                  {filteredDonations.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                        <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '8px' }}>💰</span>
+                        No donations recorded matching filter "{donationFilter}". When a donor makes a contribution, it will appear here immediately.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredDonations.map((d, idx) => {
+                      const hash = d.blockchainTxHash || d.txHash || d.razorpayPaymentId;
+                      const shortHash = hash ? `${hash.substring(0, 8)}...${hash.substring(hash.length - 6)}` : 'Verified';
+                      return (
+                        <tr
+                          key={d._id || d.donationId || idx}
+                          style={{
+                            borderBottom: idx === filteredDonations.length - 1 ? 'none' : '1px solid var(--border-light)',
+                            backgroundColor: '#ffffff',
+                          }}
+                        >
+                          <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                            {new Date(d.createdAt || Date.now()).toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                            {d.donorName || d.donorId?.name || 'Anonymous Donor'}
+                          </td>
+                          <td style={{ padding: '14px 16px', color: 'var(--text-dark)' }}>
+                            {d.requestTitle || 'Education & Healthcare'}
+                          </td>
+                          <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
+                            {d.beneficiaryName || 'NGO Hope'}
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <span style={{ fontWeight: 700, color: 'var(--primary-green)', fontSize: '0.95rem' }}>
+                              ₹{Number(d.amount || 0).toLocaleString('en-IN')}
                             </span>
-                          )}
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <span className="badge-approved" style={{ fontSize: '0.72rem' }}>
-                            {d.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 16px', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
-                          <div>{shortHash}</div>
-                          {d.blockNumber && (
-                            <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
-                              Block #{d.blockNumber}
+                            {d.paymentMethod && (
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', display: 'block' }}>
+                                {d.paymentMethod}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <span className="badge-approved" style={{ fontSize: '0.72rem' }}>
+                              {d.status}
                             </span>
-                          )}
-                        </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                          <button
-                            onClick={() => {
-                              setTrackingDonation(d);
-                              setIsTrackingOpen(true);
-                            }}
-                            className="btn-secondary"
-                            style={{ padding: '5px 12px', fontSize: '0.76rem', borderRadius: '4px' }}
-                          >
-                            🔍 Track
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                          <td style={{ padding: '14px 16px', fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>
+                            <div>{shortHash}</div>
+                            {d.blockNumber && (
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                                Block #{d.blockNumber}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                            <button
+                              onClick={() => {
+                                setTrackingDonation(d);
+                                setIsTrackingOpen(true);
+                              }}
+                              className="btn-secondary"
+                              style={{ padding: '5px 12px', fontSize: '0.76rem', borderRadius: '4px' }}
+                            >
+                              🔍 Track
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>

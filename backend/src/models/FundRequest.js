@@ -3,10 +3,14 @@ import mongoose from 'mongoose';
 const fundRequestSchema = new mongoose.Schema(
   {
     beneficiaryId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.Mixed,
       ref: 'Beneficiary',
       required: true,
       index: true,
+    },
+    beneficiaryName: {
+      type: String,
+      default: '',
     },
     title: {
       type: String,

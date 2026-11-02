@@ -11,14 +11,14 @@ export const donationService = {
   /**
    * Razorpay: Create payment order & donation intent
    */
-  async createRazorpayOrder({ requestId, amount }) {
+  async createRazorpayOrder(payload) {
     const res = await fetch(`${DONATIONS_URL}/razorpay/order`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...getAuthHeader(),
       },
-      body: JSON.stringify({ requestId, amount }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || data.message || 'Failed to initialize Razorpay payment');
@@ -28,14 +28,14 @@ export const donationService = {
   /**
    * Razorpay: Verify payment and receive clean acknowledgement
    */
-  async verifyRazorpayPayment({ donationId, razorpayOrderId, razorpayPaymentId, razorpaySignature }) {
+  async verifyRazorpayPayment(payload) {
     const res = await fetch(`${DONATIONS_URL}/razorpay/verify`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...getAuthHeader(),
       },
-      body: JSON.stringify({ donationId, razorpayOrderId, razorpayPaymentId, razorpaySignature }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || data.message || 'Payment verification failed');

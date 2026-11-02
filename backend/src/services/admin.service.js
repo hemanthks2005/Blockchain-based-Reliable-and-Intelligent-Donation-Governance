@@ -79,7 +79,7 @@ export const adminService = {
           User.countDocuments(),
           User.countDocuments({ role: 'DONOR' }),
           Beneficiary.countDocuments(),
-          Beneficiary.countDocuments({ verificationStatus: 'PENDING' }),
+          Beneficiary.countDocuments({ verificationStatus: { $in: ['PENDING', 'PENDING_VERIFICATION'] } }),
           FundRequest.countDocuments({ status: 'PENDING' }),
           Donation.countDocuments(),
           Donation.countDocuments({ status: 'CONFIRMED' }),
@@ -97,8 +97,8 @@ export const adminService = {
           },
         ]);
 
-        const totalInr = donationAmounts[0]?.totalInr || 48000;
-        const totalEth = donationAmounts[0]?.totalEth || 0.3;
+        const totalInr = typeof donationAmounts[0]?.totalInr === 'number' ? donationAmounts[0].totalInr : 48000;
+        const totalEth = typeof donationAmounts[0]?.totalEth === 'number' ? donationAmounts[0].totalEth : 0.3;
 
         return {
           users: totalUsers || 3,

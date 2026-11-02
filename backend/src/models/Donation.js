@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const donationSchema = new mongoose.Schema(
   {
     donorId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.Mixed,
       ref: 'User',
       required: true,
       index: true,
@@ -17,7 +17,7 @@ const donationSchema = new mongoose.Schema(
       default: '',
     },
     requestId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.Mixed,
       ref: 'FundRequest',
       required: true,
       index: true,
@@ -27,7 +27,7 @@ const donationSchema = new mongoose.Schema(
       default: '',
     },
     beneficiaryId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.Mixed,
       ref: 'Beneficiary',
       required: true,
       index: true,

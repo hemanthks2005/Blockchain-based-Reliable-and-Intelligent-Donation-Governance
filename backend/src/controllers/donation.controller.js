@@ -152,13 +152,40 @@ export const createRazorpayOrder = async (req, res, next) => {
 
 export const verifyRazorpayPayment = async (req, res, next) => {
   try {
-    const { donationId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+    const {
+      donationId,
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+      amount,
+      requestId,
+      campaignTitle,
+      beneficiaryName,
+      beneficiaryId,
+      beneficiaryAddress,
+      donorId,
+      donorName,
+      donorEmail,
+    } = req.body;
+
+    const resolvedDonorId = req.user?.id || donorId || '67abc1234567890123456781';
+    const resolvedDonorName = req.user?.name || donorName || 'Generous Donor';
+    const resolvedDonorEmail = req.user?.email || donorEmail || '';
 
     const result = await donationService.verifyRazorpayPayment({
       donationId,
       razorpayOrderId,
       razorpayPaymentId,
       razorpaySignature,
+      amount,
+      requestId,
+      campaignTitle,
+      beneficiaryName,
+      beneficiaryId,
+      beneficiaryAddress,
+      donorId: resolvedDonorId,
+      donorName: resolvedDonorName,
+      donorEmail: resolvedDonorEmail,
     });
 
     res.status(200).json(result);

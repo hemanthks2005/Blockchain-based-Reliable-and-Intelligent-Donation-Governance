@@ -35,7 +35,18 @@ export async function authenticate(req, res, next) {
       }
     }
 
-    const user = await getUserById(decoded.id);
+    let user = await getUserById(decoded.id);
+    if (!user && decoded.role) {
+      user = {
+        id: decoded.id,
+        _id: decoded.id,
+        name: decoded.name || (decoded.role === 'ADMIN' ? 'System Governance Admin' : `${decoded.role} User`),
+        email: decoded.email || `${decoded.role.toLowerCase()}@bridge.org`,
+        role: decoded.role,
+        status: 'ACTIVE',
+      };
+    }
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -80,7 +91,17 @@ export async function optionalAuth(req, res, next) {
           }
         }
         if (decoded) {
-          const user = await getUserById(decoded.id);
+          let user = await getUserById(decoded.id);
+          if (!user && decoded.role) {
+            user = {
+              id: decoded.id,
+              _id: decoded.id,
+              name: decoded.name || (decoded.role === 'ADMIN' ? 'System Governance Admin' : `${decoded.role} User`),
+              email: decoded.email || `${decoded.role.toLowerCase()}@bridge.org`,
+              role: decoded.role,
+              status: 'ACTIVE',
+            };
+          }
           if (user && user.status === 'ACTIVE') {
             req.user = user;
           }

@@ -12,7 +12,10 @@ import {
   createUser,
 } from '../controllers/admin.controller.js';
 import { verify as verifyBeneficiary } from '../controllers/beneficiary.controller.js';
-import { updateStatus as updateRequestStatus } from '../controllers/request.controller.js';
+import {
+  updateStatus as updateRequestStatus,
+  getAll as getAllRequests,
+} from '../controllers/request.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/role.middleware.js';
 
@@ -22,6 +25,10 @@ const router = express.Router();
 router.use(authenticate, requireRole('ADMIN'));
 
 router.get('/dashboard', getDashboard);
+router.get('/requests', (req, res, next) => {
+  req.query.status = req.query.status || 'ALL';
+  return getAllRequests(req, res, next);
+});
 router.get('/audit-logs', getAuditLogs);
 router.get('/blockchain-records', getBlockchainRecords);
 router.get('/donations', getDonations);
