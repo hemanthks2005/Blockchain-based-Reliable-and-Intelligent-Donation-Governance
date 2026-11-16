@@ -96,6 +96,7 @@ export function AdminDashboard() {
 
   const [activeTab, setActiveTab] = useState(getTabFromHash(location.hash));
   const [requests, setRequests] = useState([]);
+  const [requestFilter, setRequestFilter] = useState('ALL');
   const [beneficiaries, setBeneficiaries] = useState([]);
   const [donations, setDonations] = useState([]);
   const [blockchainRecords, setBlockchainRecords] = useState(null);
@@ -484,6 +485,9 @@ export function AdminDashboard() {
   };
 
   const pendingRequestsCount = requests.filter((r) => r.status === 'PENDING').length;
+  const visibleRequests = requestFilter === 'ALL'
+    ? requests
+    : requests.filter((request) => request.status === requestFilter);
   const pendingBeneficiariesCount = beneficiaries.filter(
     (b) => b.verificationStatus === 'PENDING_VERIFICATION' || b.verificationStatus === 'PENDING'
   ).length;
@@ -1363,12 +1367,22 @@ export function AdminDashboard() {
       {/* SECTION 2: Campaign Requests Review */}
       {(activeTab === 'dashboard' || activeTab === 'governance' || activeTab === 'approve') && (
         <div style={{ marginBottom: '40px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-dark)' }}>
-              Recent Campaign Requests Review
+              Campaign Requests & Approved Campaigns
             </h2>
               <span className="badge-pending">{pendingRequestsCount} Pending</span>
             </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map((status) => (
+                <button key={status} type="button" onClick={() => setRequestFilter(status)} className="btn-secondary"
+                  style={{ padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, borderColor: requestFilter === status ? 'var(--primary-green)' : 'var(--border-light)', color: requestFilter === status ? 'var(--primary-green)' : 'var(--text-muted)' }}>
+                  {status === 'ALL' ? `All (${requests.length})` : `${status} (${requests.filter((r) => r.status === status).length})`}
+                </button>
+              ))}
+            </div>
+          </div>
 
             <div className="bridge-card" style={{ overflow: 'hidden' }}>
               <div className="table-responsive">
@@ -1383,7 +1397,7 @@ export function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {requests.length === 0 ? (
+                    {visibleRequests.length === 0 ? (
                       <tr>
                         <td colSpan="5" style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)' }}>
                           <span style={{ fontSize: '1.5rem', display: 'block', marginBottom: '8px' }}>📋</span>
@@ -1391,7 +1405,7 @@ export function AdminDashboard() {
                         </td>
                       </tr>
                     ) : (
-                      requests.map((req, idx) => (
+                      visibleRequests.map((req, idx) => (
                         <tr
                           key={req._id || req.id || idx}
                           style={{

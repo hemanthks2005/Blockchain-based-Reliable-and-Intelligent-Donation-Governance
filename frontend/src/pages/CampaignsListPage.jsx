@@ -96,16 +96,14 @@ export function CampaignsListPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reportingCampaign, setReportingCampaign] = useState(null);
-  const [campaigns, setCampaigns] = useState(DEFAULT_CAMPAIGNS);
+  const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const loadCampaigns = async () => {
     setLoading(true);
     try {
-      const items = await govService.fetchRequests();
-      if (Array.isArray(items) && items.length > 0) {
-        setCampaigns(items.map(formatCampaign));
-      }
+      const items = await govService.fetchRequests('APPROVED');
+      setCampaigns((Array.isArray(items) ? items : []).map(formatCampaign));
     } catch (err) {
       console.warn('Could not load dynamic campaigns:', err);
     } finally {
@@ -253,6 +251,11 @@ export function CampaignsListPage() {
             </div>
           ))}
         </div>
+        {!loading && campaigns.length === 0 && (
+          <div className="bridge-card" style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            No approved campaigns are available yet. Please check back soon.
+          </div>
+        )}
 
       </div>
 

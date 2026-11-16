@@ -40,7 +40,8 @@ export function BeneficiaryDashboard() {
     } else if (location.hash === '#create') {
       setShowCreateModal(true);
     } else if (location.hash === '#campaigns' || location.hash === '#requests' || location.hash === '#transactions') {
-      const el = document.getElementById('campaigns-section');
+      const targetId = location.hash.slice(1);
+      const el = document.getElementById(targetId);
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
   }, [location.hash]);
@@ -67,11 +68,7 @@ export function BeneficiaryDashboard() {
 
       setProfile(profData);
       const safeReqs = Array.isArray(reqsData) ? reqsData : (reqsData?.requests || []);
-      setRequests(safeReqs.length > 0 ? safeReqs : [
-        { _id: '1', title: 'Education for Every Child', requestedAmount: 1000000, approvedAmount: 850000, status: 'APPROVED' },
-        { _id: '2', title: 'Medical Support', requestedAmount: 800000, approvedAmount: 0, status: 'PENDING' },
-        { _id: '3', title: 'Clean Water Initiative', requestedAmount: 600000, approvedAmount: 375000, status: 'APPROVED' },
-      ]);
+      setRequests(safeReqs);
     } catch (_err) {
       // Graceful fallback
     } finally {
@@ -234,7 +231,7 @@ export function BeneficiaryDashboard() {
       </div>
 
       {/* My Campaigns / Requests Header */}
-      <div id="campaigns-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+      <div id="campaigns" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-dark)' }}>
           My Funding Requests
         </h2>
@@ -296,7 +293,7 @@ export function BeneficiaryDashboard() {
       )}
 
       {/* Campaigns Table with table-responsive wrapper */}
-      <div className="bridge-card" style={{ overflow: 'hidden' }}>
+      <div id="requests" className="bridge-card" style={{ overflow: 'hidden', scrollMarginTop: '24px' }}>
         <div className="table-responsive">
           <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
             <thead>
@@ -411,6 +408,22 @@ export function BeneficiaryDashboard() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div id="transactions" className="bridge-card" style={{ padding: '20px 24px', marginTop: '24px', scrollMarginTop: '24px' }}>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px' }}>Transaction History</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', margin: 0 }}>
+          Donations and fund releases for your approved campaigns will appear here as they are recorded.
+        </p>
+        {requests.filter((r) => Number(r.collectedAmount || 0) > 0).length > 0 ? (
+          <div style={{ marginTop: '14px' }}>
+            {requests.filter((r) => Number(r.collectedAmount || 0) > 0).map((r) => (
+              <div key={r._id || r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderTop: '1px solid var(--border-light)' }}>
+                <span>{r.title}</span><strong>₹ {Number(r.collectedAmount).toLocaleString('en-IN')}</strong>
+              </div>
+            ))}
+          </div>
+        ) : <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '12px 0 0' }}>No campaign transactions recorded yet.</p>}
       </div>
 
       {/* Create Request Modal */}

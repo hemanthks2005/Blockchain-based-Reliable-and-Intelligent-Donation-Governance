@@ -165,21 +165,14 @@ export function DonorDashboard() {
     },
   ];
 
-  const [campaigns, setCampaigns] = useState(DEFAULT_CAMPAIGNS);
+  const [campaigns, setCampaigns] = useState([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
 
   const loadCampaigns = async () => {
     setLoadingCampaigns(true);
     try {
-      const items = await govService.fetchRequests();
-      if (Array.isArray(items) && items.length > 0) {
-        const relevant = items.filter(
-          (r) => r.status === 'APPROVED' || r.status === 'UNDER_REVIEW' || r.isFrozen
-        );
-        if (relevant.length > 0) {
-          setCampaigns(relevant.map(formatCampaign));
-        }
-      }
+      const items = await govService.fetchRequests('APPROVED');
+      setCampaigns((Array.isArray(items) ? items : []).map(formatCampaign));
     } catch (err) {
       console.warn('Could not load dynamic approved campaigns:', err);
     } finally {

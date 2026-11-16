@@ -233,7 +233,7 @@ export async function getRequests({ role, beneficiaryId, status } = {}) {
         .sort({ createdAt: -1 })
         .lean();
 
-      if (Array.isArray(dbItems) && dbItems.length > 0) {
+      if (Array.isArray(dbItems)) {
         for (const item of dbItems) {
           if (!item.beneficiaryName && item.beneficiaryId?.name) {
             item.beneficiaryName = item.beneficiaryId.name;
