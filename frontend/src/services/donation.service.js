@@ -92,6 +92,15 @@ export const donationService = {
     return data.data || [];
   },
 
+  async getBeneficiaryDonations() {
+    const res = await fetch(`${DONATIONS_URL}/beneficiary/me`, {
+      headers: { ...getAuthHeader() },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Failed to fetch transaction history');
+    return Array.isArray(data.data) ? data.data : [];
+  },
+
   /**
    * 4. Get all donations (GET /donations)
    */

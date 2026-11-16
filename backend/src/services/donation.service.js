@@ -474,6 +474,32 @@ export const donationService = {
     };
   },
 
+  async getBeneficiaryDonations(beneficiaryId) {
+    if (isDbConnected()) {
+      return Donation.find({ beneficiaryId })
+        .select('requestTitle amount amountEth currency status blockchainTxHash blockNumber confirmedAt createdAt')
+        .sort({ createdAt: -1 })
+        .lean();
+    }
+
+    seedDefaultDonations();
+    return Array.from(inMemoryDonations.values())
+      .filter((donation) => donation.beneficiaryId?.toString() === beneficiaryId?.toString())
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map(({ _id, requestTitle, amount, amountEth, currency, status, blockchainTxHash, blockNumber, confirmedAt, createdAt }) => ({
+        _id,
+        requestTitle,
+        amount,
+        amountEth,
+        currency,
+        status,
+        blockchainTxHash,
+        blockNumber,
+        confirmedAt,
+        createdAt,
+      }));
+  },
+
   /**
    * 5. Get all donations (Admin / Public Overview) (GET /donations)
    */

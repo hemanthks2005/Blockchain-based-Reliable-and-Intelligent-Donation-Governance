@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DashboardLayout } from '../components/layouts/DashboardLayout';
 import { Link, useLocation } from 'react-router-dom';
 import * as govService from '../services/governance.service';
+import donationService from '../services/donation.service';
 import { EvidenceSubmissionModal } from '../components/common/EvidenceSubmissionModal';
 
 export function BeneficiaryDashboard() {
   const location = useLocation();
   const [profile, setProfile] = useState(null);
   const [requests, setRequests] = useState([]);
+  const requestMutationVersion = useRef(0);
+  const [transactions, setTransactions] = useState([]);
+  const [transactionLoadError, setTransactionLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -54,21 +58,33 @@ export function BeneficiaryDashboard() {
   });
 
   const loadData = async () => {
+    const requestVersionAtStart = requestMutationVersion.current;
     try {
       setLoading(true);
-      const [profData, reqsData] = await Promise.all([
+      const [profData, reqsData, transactionData] = await Promise.all([
         govService.fetchMyProfile().catch(() => ({
           name: 'NGO Hope',
           contactEmail: 'contact@ngohope.org',
           verificationStatus: 'VERIFIED',
           description: 'Education and health support organization for underprivileged youth',
         })),
-        govService.fetchRequests('ALL').catch(() => []),
+        govService.fetchRequests('ALL').then((data) => ({ data })).catch((error) => ({ error })),
+        donationService.getBeneficiaryDonations().then((data) => ({ data })).catch((error) => ({ error })),
       ]);
 
       setProfile(profData);
-      const safeReqs = Array.isArray(reqsData) ? reqsData : (reqsData?.requests || []);
-      setRequests(safeReqs);
+      if (!reqsData.error && requestVersionAtStart === requestMutationVersion.current) {
+        const safeReqs = Array.isArray(reqsData.data)
+          ? reqsData.data
+          : (reqsData.data?.requests || []);
+        setRequests(safeReqs);
+      }
+      if (transactionData.error) {
+        setTransactionLoadError(true);
+      } else {
+        setTransactions(transactionData.data);
+        setTransactionLoadError(false);
+      }
     } catch (_err) {
       // Graceful fallback
     } finally {
@@ -92,12 +108,12 @@ export function BeneficiaryDashboard() {
         requestedAmount: Number(newRequest.requestedAmount),
       };
       const created = await govService.createFundRequest(payload);
+      requestMutationVersion.current += 1;
       setRequests((prev) => [created, ...prev]);
       setShowCreateModal(false);
       setNewRequest({ title: '', purpose: '', description: '', requestedAmount: '' });
       setFeedbackMsg('Funding request created successfully and queued for Admin review!');
       setTimeout(() => setFeedbackMsg(null), 5000);
-      loadData();
     } catch (err) {
       alert(err.message || 'Failed to create request');
     }
@@ -411,19 +427,102 @@ export function BeneficiaryDashboard() {
       </div>
 
       <div id="transactions" className="bridge-card" style={{ padding: '20px 24px', marginTop: '24px', scrollMarginTop: '24px' }}>
-        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px' }}>Transaction History</h2>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '18px' }}>Funding Request &amp; Transaction History</h2>
+        <h3 style={{ fontSize: '0.98rem', fontWeight: 700, marginBottom: '6px' }}>Funding Request Status</h3>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', margin: 0 }}>
-          Donations and fund releases for your approved campaigns will appear here as they are recorded.
+          Track the review status of each request submitted by your organization.
         </p>
-        {requests.filter((r) => Number(r.collectedAmount || 0) > 0).length > 0 ? (
-          <div style={{ marginTop: '14px' }}>
-            {requests.filter((r) => Number(r.collectedAmount || 0) > 0).map((r) => (
-              <div key={r._id || r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderTop: '1px solid var(--border-light)' }}>
-                <span>{r.title}</span><strong>₹ {Number(r.collectedAmount).toLocaleString('en-IN')}</strong>
-              </div>
-            ))}
+        {loading ? (
+          <p role="status" style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '12px 0 18px' }}>
+            Loading funding request statuses…
+          </p>
+        ) : requests.length > 0 ? (
+          <div className="table-responsive" style={{ marginTop: '12px', marginBottom: '22px' }}>
+            <table style={{ width: '100%', minWidth: '440px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
+              <thead>
+                <tr style={{ backgroundColor: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-light)' }}>
+                  <th style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>Funding Request</th>
+                  <th style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>Requested Amount</th>
+                  <th style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>Review Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {requests.map((request) => {
+                  const status = request.status || 'PENDING';
+                  const approved = status === 'APPROVED' || status === 'COMPLETED';
+                  return (
+                    <tr key={request._id || request.id || request.title} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '12px', fontWeight: 600 }}>{request.title}</td>
+                      <td style={{ padding: '12px' }}>₹ {Number(request.requestedAmount || 0).toLocaleString('en-IN')}</td>
+                      <td style={{ padding: '12px' }}>
+                        <span className={approved ? 'badge-approved' : status === 'REJECTED' ? 'stat-card-rose' : 'badge-pending'} style={{ padding: '4px 8px', borderRadius: 'var(--radius-full)', fontSize: '0.72rem', fontWeight: 700 }}>
+                          {status.replaceAll('_', ' ')}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        ) : <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '12px 0 0' }}>No campaign transactions recorded yet.</p>}
+        ) : (
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '12px 0 22px' }}>
+            No funding requests have been submitted yet.
+          </p>
+        )}
+
+        <h3 style={{ fontSize: '0.98rem', fontWeight: 700, marginBottom: '6px' }}>Donation Transactions</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', margin: 0 }}>
+          Donations made to your funding requests and their payment status.
+        </p>
+        {transactionLoadError ? (
+          <p role="status" style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '12px 0 0' }}>
+            Transaction history could not be loaded. Please refresh to try again.
+          </p>
+        ) : loading ? (
+          <p role="status" style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '12px 0 0' }}>
+            Loading transaction history…
+          </p>
+        ) : transactions.length > 0 ? (
+          <div className="table-responsive" style={{ marginTop: '14px' }}>
+            <table style={{ width: '100%', minWidth: '560px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
+              <thead>
+                <tr style={{ backgroundColor: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-light)' }}>
+                  <th style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>Funding Request</th>
+                  <th style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>Amount</th>
+                  <th style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>Status</th>
+                  <th style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>Date</th>
+                  <th style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>Transaction</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((transaction) => {
+                  const completed = ['CONFIRMED', 'ALLOCATED', 'COMPLETED'].includes(transaction.status);
+                  const timestamp = transaction.confirmedAt || transaction.createdAt;
+                  return (
+                    <tr key={transaction._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '12px', fontWeight: 600 }}>{transaction.requestTitle || 'Funding request'}</td>
+                      <td style={{ padding: '12px' }}>₹ {Number(transaction.amount || 0).toLocaleString('en-IN')}</td>
+                      <td style={{ padding: '12px' }}>
+                        <span className={completed ? 'badge-approved' : 'badge-pending'} style={{ padding: '4px 8px', borderRadius: 'var(--radius-full)', fontSize: '0.72rem', fontWeight: 700 }}>
+                          {transaction.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px', color: 'var(--text-muted)' }}>
+                        {timestamp ? new Date(timestamp).toLocaleDateString('en-IN') : '—'}
+                      </td>
+                      <td style={{ padding: '12px', color: 'var(--text-muted)' }}>
+                        {transaction.blockchainTxHash
+                          ? `${transaction.blockchainTxHash.slice(0, 10)}…`
+                          : transaction.blockNumber ? `Block #${transaction.blockNumber}` : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '12px 0 0' }}>No donation transactions recorded yet.</p>}
       </div>
 
       {/* Create Request Modal */}

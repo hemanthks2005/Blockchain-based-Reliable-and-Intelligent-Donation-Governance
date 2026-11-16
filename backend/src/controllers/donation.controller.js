@@ -1,4 +1,5 @@
 import { donationService } from '../services/donation.service.js';
+import * as beneficiaryService from '../services/beneficiary.service.js';
 
 export const createDonation = async (req, res, next) => {
   try {
@@ -85,6 +86,20 @@ export const getMyDonations = async (req, res, next) => {
       data: result.donations,
       pagination: result.pagination,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getBeneficiaryDonations = async (req, res, next) => {
+  try {
+    const beneficiary = await beneficiaryService.getProfileByUserId(req.user.id);
+    if (!beneficiary) {
+      return res.status(404).json({ success: false, error: { message: 'Beneficiary profile not found' } });
+    }
+
+    const donations = await donationService.getBeneficiaryDonations(beneficiary._id || beneficiary.id);
+    res.status(200).json({ success: true, data: donations });
   } catch (error) {
     next(error);
   }

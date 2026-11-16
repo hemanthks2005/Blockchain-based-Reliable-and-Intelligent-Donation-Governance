@@ -4,12 +4,14 @@ import {
   submitDonation,
   getDonation,
   getMyDonations,
+  getBeneficiaryDonations,
   getAllDonations,
   trackDonation,
   createRazorpayOrder,
   verifyRazorpayPayment,
 } from '../controllers/donation.controller.js';
 import { authenticate, optionalAuth } from '../middleware/auth.middleware.js';
+import { requireRole } from '../middleware/role.middleware.js';
 import { transactionLimiter } from '../middleware/rateLimiter.middleware.js';
 
 const router = express.Router();
@@ -27,13 +29,16 @@ router.post('/:id/submit', transactionLimiter, optionalAuth, submitDonation);
 // 3. Get donor's donation history (GET /donations/me)
 router.get('/me', authenticate, getMyDonations);
 
-// 4. Get all donations (GET /donations)
+// 4. Beneficiary's own donation and transaction history
+router.get('/beneficiary/me', authenticate, requireRole('BENEFICIARY'), getBeneficiaryDonations);
+
+// 5. Get all donations (GET /donations)
 router.get('/', optionalAuth, getAllDonations);
 
-// 5. Track donation lifecycle (GET /donations/:id/track)
+// 6. Track donation lifecycle (GET /donations/:id/track)
 router.get('/:id/track', trackDonation);
 
-// 6. Get single donation (GET /donations/:id)
+// 7. Get single donation (GET /donations/:id)
 router.get('/:id', getDonation);
 
 export default router;
