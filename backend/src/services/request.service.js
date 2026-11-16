@@ -293,6 +293,24 @@ export async function updateRequestStatus(id, { status, remarks, approvedAmount 
   }
 }
 
+export async function markRequestReleased(id, release) {
+  if (isDbConnected()) {
+    const doc = await FundRequest.findById(id);
+    if (!doc) { const err = new Error('Fund request not found'); err.statusCode = 404; throw err; }
+    doc.status = 'COMPLETED';
+    doc.reviewRemarks = `${doc.reviewRemarks || ''}${doc.reviewRemarks ? ' | ' : ''}Funds released on-chain: ${release.txHash}`;
+    await doc.save();
+    return doc;
+  }
+  seedDefaultRequests();
+  const doc = inMemoryRequests.get(id.toString());
+  if (!doc) { const err = new Error('Fund request not found'); err.statusCode = 404; throw err; }
+  doc.status = 'COMPLETED';
+  doc.reviewRemarks = `${doc.reviewRemarks || ''}${doc.reviewRemarks ? ' | ' : ''}Funds released: ${release.txHash}`;
+  doc.updatedAt = new Date();
+  return doc;
+}
+
 export const requestService = {
   createRequest,
   getRequests,

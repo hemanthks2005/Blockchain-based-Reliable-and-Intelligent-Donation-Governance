@@ -321,6 +321,25 @@ class BlockchainService {
     };
   }
 
+  async releaseFunds(requestId, beneficiaryAddress) {
+    await this.initPromise;
+    if (!ethers.isAddress(beneficiaryAddress)) throw new Error('A valid beneficiary wallet address is required');
+    const id = Number(requestId);
+    if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Invalid campaign release identifier');
+
+    if (this.isLive && this.contract) {
+      const tx = await this.contract.releaseFunds(id, beneficiaryAddress);
+      const receipt = await tx.wait();
+      return { mode: 'live', txHash: tx.hash, blockNumber: receipt.blockNumber, status: receipt.status === 1 ? 'SUCCESS' : 'FAILED' };
+    }
+
+    const txHash = ethers.keccak256(ethers.toUtf8Bytes(`release-${id}-${beneficiaryAddress}-${Date.now()}-${Math.random()}`));
+    this.simulationState.currentBlockNumber++;
+    const receipt = { transactionHash: txHash, blockNumber: this.simulationState.currentBlockNumber, status: 1 };
+    this.simulationState.transactions.set(txHash, receipt);
+    return { mode: 'simulation', txHash, blockNumber: receipt.blockNumber, status: 'SUCCESS' };
+  }
+
   /**
    * Fetch donation details by donationId
    */

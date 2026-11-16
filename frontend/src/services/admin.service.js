@@ -8,6 +8,16 @@ function getAuthHeader() {
 }
 
 export const adminService = {
+  async releaseFunds(requestId) {
+    const res = await fetch(`${ADMIN_URL}/requests/${requestId}/release`, {
+      method: 'POST',
+      headers: { ...getAuthHeader() },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Failed to release campaign funds');
+    return data.data;
+  },
+
   /**
    * 1. Get complete Admin Dashboard metrics (GET /admin/dashboard)
    */

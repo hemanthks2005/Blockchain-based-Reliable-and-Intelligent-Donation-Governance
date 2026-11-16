@@ -15,6 +15,7 @@ import { verify as verifyBeneficiary } from '../controllers/beneficiary.controll
 import {
   updateStatus as updateRequestStatus,
   getAll as getAllRequests,
+  releaseFunds,
 } from '../controllers/request.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/role.middleware.js';
@@ -47,6 +48,7 @@ router.post('/requests/:id/approve', (req, res, next) => {
   req.body.status = req.body.status || 'APPROVED';
   return updateRequestStatus(req, res, next);
 });
+router.post('/requests/:id/release', releaseFunds);
 router.patch('/requests/:id/status', updateRequestStatus);
 router.post('/requests/:id/status', updateRequestStatus);
 

@@ -264,6 +264,8 @@ export function AdminDashboard() {
 
   const [fundReleaseSuccess, setFundReleaseSuccess] = useState(false);
   const [isReleasing, setIsReleasing] = useState(false);
+  const [releaseError, setReleaseError] = useState('');
+  const [releaseReceipt, setReleaseReceipt] = useState(null);
 
   // Sprint 7 Reports State
   const [reportType, setReportType] = useState('donations'); // 'donations' | 'beneficiaries' | 'transactions' | 'audit'
@@ -475,14 +477,24 @@ export function AdminDashboard() {
     }
   };
 
-  const handleExecuteRelease = () => {
+  const handleExecuteRelease = async (request) => {
     setIsReleasing(true);
-    setTimeout(() => {
-      setIsReleasing(false);
+    setReleaseError('');
+    setReleaseReceipt(null);
+    setFundReleaseSuccess(false);
+    try {
+      const receipt = await adminService.releaseFunds(request._id || request.id);
+      setReleaseReceipt(receipt);
       setFundReleaseSuccess(true);
-      setTimeout(() => setFundReleaseSuccess(false), 5000);
-    }, 900);
+      await loadData();
+    } catch (err) {
+      setReleaseError(err.message || 'Fund release failed');
+    } finally {
+      setIsReleasing(false);
+    }
   };
+
+  const releasableRequests = requests.filter((request) => request.status === 'APPROVED' && !request.isFrozen);
 
   const pendingRequestsCount = requests.filter((r) => r.status === 'PENDING').length;
   const visibleRequests = requestFilter === 'ALL'
@@ -1633,41 +1645,26 @@ export function AdminDashboard() {
                   marginBottom: '20px',
                 }}
               >
-                <span>✓</span> Funds Released Successfully! Smart contract transfer confirmed on-chain.
+                <span>✓</span> Funds released successfully ({releaseReceipt?.mode || 'blockchain'}). Transaction: {releaseReceipt?.txHash}
               </div>
             )}
-
-            <div className="bridge-card" style={{ padding: 'clamp(20px, 3vw, 28px)', maxWidth: '640px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px', fontSize: '0.9rem' }}>
-                <div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>CAMPAIGN</div>
-                  <div style={{ fontWeight: 700, color: 'var(--text-dark)' }}>Education for Every Child</div>
+            {releaseError && <div role="alert" style={{ color: '#b42318', marginBottom: 16 }}>{releaseError}</div>}
+            {releasableRequests.length === 0 && <p style={{ color: 'var(--text-muted)' }}>There are no approved campaigns ready for fund release.</p>}
+            {releasableRequests.map((request) => {
+              const id = request._id || request.id;
+              const wallet = request.beneficiaryAddress || request.beneficiaryId?.walletAddress || 'Wallet not configured';
+              return <div className="bridge-card" key={id} style={{ padding: 'clamp(20px, 3vw, 28px)', maxWidth: '640px', marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px', fontSize: '0.9rem' }}>
+                  <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>CAMPAIGN</div><div style={{ fontWeight: 700, color: 'var(--text-dark)' }}>{request.title}</div></div>
+                  <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>BENEFICIARY WALLET</div><div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--accent-blue)', wordBreak: 'break-all' }}>{wallet}</div></div>
+                  <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>APPROVED AMOUNT</div><div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary-green)' }}>₹ {Number(request.approvedAmount || 0).toLocaleString('en-IN')}</div></div>
+                  <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>ESCROW STATUS</div><span className="badge-approved">Ready for Release</span></div>
                 </div>
-                <div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>BENEFICIARY WALLET</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--accent-blue)', wordBreak: 'break-all' }}>
-                    0x70997970C51812dc3A010C7d01b50e0d17dc79C8
-                  </div>
-                </div>
-                <div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>APPROVED AMOUNT</div>
-                  <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary-green)' }}>₹ 50,000</div>
-                </div>
-                <div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>ESCROW STATUS</div>
-                  <span className="badge-approved">Ready for Release</span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleExecuteRelease}
-                disabled={isReleasing}
-                className="btn-primary"
-                style={{ width: '100%', padding: '12px', fontSize: '0.95rem' }}
-              >
-                {isReleasing ? 'Executing Release via Smart Contract...' : 'Release Funds to Beneficiary →'}
-              </button>
-            </div>
+                <button onClick={() => handleExecuteRelease(request)} disabled={isReleasing || wallet === 'Wallet not configured'} className="btn-primary" style={{ width: '100%', padding: '12px', fontSize: '0.95rem' }}>
+                  {isReleasing ? 'Executing Release via Smart Contract...' : 'Release Funds to Beneficiary →'}
+                </button>
+              </div>;
+            })}
           </div>
 
           {/* SECTION 4: Suspicious Campaign Reports & Democratic Governance Supervision */}

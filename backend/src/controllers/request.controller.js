@@ -1,5 +1,8 @@
 import * as requestService from '../services/request.service.js';
 import * as beneficiaryService from '../services/beneficiary.service.js';
+import { blockchainService } from '../services/blockchain.service.js';
+import { Donation } from '../models/Donation.js';
+import mongoose from 'mongoose';
 
 export async function create(req, res, next) {
   try {
@@ -97,6 +100,41 @@ export async function updateStatus(req, res, next) {
     if (err.statusCode) {
       return res.status(err.statusCode).json({ success: false, error: { message: err.message } });
     }
+    next(err);
+  }
+}
+
+export async function releaseFunds(req, res, next) {
+  try {
+    const request = await requestService.getRequestById(req.params.id);
+    if (!request) return res.status(404).json({ success: false, error: { message: 'Fund request not found' } });
+    if (request.status !== 'APPROVED') return res.status(409).json({ success: false, error: { message: 'Only approved campaigns can receive a fund release' } });
+    if (request.isFrozen || request.status === 'UNDER_REVIEW') return res.status(403).json({ success: false, error: { message: 'Campaign is frozen under governance review' } });
+
+    const requestId = Number.parseInt(String(req.params.id).slice(-4), 16) || 101;
+    let walletAddress = request.beneficiaryAddress || request.beneficiaryId?.walletAddress;
+    let totalEth = Number(request.collectedEth || 0);
+    if (mongoose.connection.readyState === 1) {
+      const beneficiary = await beneficiaryService.getBeneficiaryById(request.beneficiaryId?._id || request.beneficiaryId);
+      walletAddress = walletAddress || beneficiary?.walletAddress;
+      if (beneficiary?.userId) {
+        const { User } = await import('../models/User.js');
+        const user = await User.findById(beneficiary.userId).select('walletAddress');
+        walletAddress = walletAddress || user?.walletAddress;
+      }
+      const donations = await Donation.find({ requestId: req.params.id, status: { $in: ['CONFIRMED', 'ALLOCATED'] } }).select('amountEth beneficiaryAddress');
+      totalEth = donations.reduce((sum, donation) => sum + Number(donation.amountEth || 0), 0);
+      walletAddress = walletAddress || donations.find((donation) => donation.beneficiaryAddress)?.beneficiaryAddress;
+    }
+    if (!walletAddress) return res.status(400).json({ success: false, error: { message: 'Set a beneficiary wallet address before releasing funds' } });
+    if (totalEth <= 0) return res.status(409).json({ success: false, error: { message: 'No confirmed escrow donations are available for this campaign' } });
+
+    const result = await blockchainService.releaseFunds(requestId, walletAddress);
+    if (result.status !== 'SUCCESS') throw new Error('Blockchain did not confirm the fund transfer');
+    await requestService.markRequestReleased(req.params.id, result);
+    res.status(200).json({ success: true, message: 'Funds released successfully', data: { ...result, requestId: req.params.id, campaignChainId: requestId, beneficiaryAddress: walletAddress, amountEth: totalEth } });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: { message: err.message } });
     next(err);
   }
 }
