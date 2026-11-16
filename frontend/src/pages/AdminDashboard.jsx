@@ -266,6 +266,9 @@ export function AdminDashboard() {
   const [isReleasing, setIsReleasing] = useState(false);
   const [releaseError, setReleaseError] = useState('');
   const [releaseReceipt, setReleaseReceipt] = useState(null);
+  const [releaseSearchQuery, setReleaseSearchQuery] = useState('');
+  const [releaseStatusFilter, setReleaseStatusFilter] = useState('ALL');
+  const [releasePage, setReleasePage] = useState(1);
 
   // Sprint 7 Reports State
   const [reportType, setReportType] = useState('donations'); // 'donations' | 'beneficiaries' | 'transactions' | 'audit'
@@ -494,8 +497,32 @@ export function AdminDashboard() {
     }
   };
 
-  const releasableRequests = requests.filter((request) => request.status === 'APPROVED' && !request.isFrozen);
-  const releasedRequests = requests.filter((request) => request.status === 'COMPLETED' && request.releaseTxHash);
+  const releaseItems = requests
+    .filter((request) => (request.status === 'APPROVED' && !request.isFrozen) || (request.status === 'COMPLETED' && request.releaseTxHash))
+    .map((request) => {
+      const wallet = request.beneficiaryAddress || request.beneficiaryId?.walletAddress || request.beneficiaryId?.userId?.walletAddress;
+      const isReleased = request.status === 'COMPLETED' && Boolean(request.releaseTxHash);
+      const category = isReleased ? 'RELEASED' : !wallet ? 'WALLET_REQUIRED' : Number(request.collectedEth || 0) <= 0 ? 'AWAITING_DONATIONS' : 'READY';
+      return { ...request, wallet, isReleased, releaseCategory: category };
+    });
+  const filteredReleaseItems = releaseItems.filter((request) => {
+    if (releaseStatusFilter !== 'ALL' && request.releaseCategory !== releaseStatusFilter) return false;
+    const query = releaseSearchQuery.trim().toLowerCase();
+    if (!query) return true;
+    const searchable = [
+      request.title,
+      request.beneficiaryName,
+      request.beneficiaryId?.name,
+      request.wallet,
+      request._id,
+      request.id,
+    ].filter(Boolean).join(' ').toLowerCase();
+    return searchable.includes(query);
+  });
+  const RELEASE_PAGE_SIZE = 10;
+  const releasePageCount = Math.max(1, Math.ceil(filteredReleaseItems.length / RELEASE_PAGE_SIZE));
+  const currentReleasePage = Math.min(releasePage, releasePageCount);
+  const visibleReleaseItems = filteredReleaseItems.slice((currentReleasePage - 1) * RELEASE_PAGE_SIZE, currentReleasePage * RELEASE_PAGE_SIZE);
 
   const pendingRequestsCount = requests.filter((r) => r.status === 'PENDING').length;
   const visibleRequests = requestFilter === 'ALL'
@@ -1633,7 +1660,7 @@ export function AdminDashboard() {
               <strong style={{ color: 'var(--text-dark)' }}>How this screen works</strong>
               <p style={{ margin: '6px 0' }}>The <strong>approved amount</strong> is the campaign’s INR limit. <strong>Donations in escrow</strong> are the funds actually available to transfer.</p>
               <p style={{ margin: '6px 0' }}><strong>Beneficiary payout wallet</strong> is the NGO’s receiving wallet address. The beneficiary must save it in their Beneficiary Profile before you can release funds.</p>
-              <p style={{ margin: '6px 0 0' }}>Campaigns still listed under “Awaiting release” have no recorded release. A successful release moves to “Recently released” with its transaction hash.</p>
+              <p style={{ margin: '6px 0 0' }}>Campaigns marked “Released” have a confirmed release and show the transaction hash.</p>
             </div>
 
             {fundReleaseSuccess && (
@@ -1656,15 +1683,54 @@ export function AdminDashboard() {
               </div>
             )}
             {releaseError && <div role="alert" style={{ color: '#b42318', marginBottom: 16 }}>{releaseError}</div>}
-            {releasableRequests.length === 0 && <p style={{ color: 'var(--text-muted)' }}>There are no approved campaigns awaiting release.</p>}
-            {releasableRequests.map((request) => {
+            <div className="bridge-card" style={{ maxWidth: 900, padding: 16, marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', position: 'sticky', top: 8, zIndex: 4 }}>
+              <input
+                type="search"
+                value={releaseSearchQuery}
+                onChange={(event) => { setReleaseSearchQuery(event.target.value); setReleasePage(1); }}
+                placeholder="Search campaign, beneficiary, wallet, or ID"
+                aria-label="Search fund release campaigns"
+                className="bridge-input"
+                style={{ flex: '1 1 300px', minWidth: 220 }}
+              />
+              <select
+                value={releaseStatusFilter}
+                onChange={(event) => { setReleaseStatusFilter(event.target.value); setReleasePage(1); }}
+                aria-label="Filter campaigns by release status"
+                className="bridge-input"
+                style={{ flex: '0 1 220px' }}
+              >
+                <option value="ALL">All campaign statuses</option>
+                <option value="READY">Ready to release</option>
+                <option value="WALLET_REQUIRED">Wallet needed</option>
+                <option value="AWAITING_DONATIONS">Awaiting donations</option>
+                <option value="RELEASED">Released</option>
+              </select>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.84rem' }}>{filteredReleaseItems.length} campaigns</span>
+            </div>
+            <div style={{ maxWidth: 900, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.84rem' }}>
+                {filteredReleaseItems.length === 0 ? 'No matching campaigns' : `Showing ${(currentReleasePage - 1) * RELEASE_PAGE_SIZE + 1}–${Math.min(currentReleasePage * RELEASE_PAGE_SIZE, filteredReleaseItems.length)} of ${filteredReleaseItems.length}`}
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button type="button" className="btn-secondary" disabled={currentReleasePage <= 1} onClick={() => setReleasePage((page) => Math.max(1, page - 1))} style={{ padding: '7px 12px' }}>Previous</button>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.84rem' }}>Page {currentReleasePage} of {releasePageCount}</span>
+                <button type="button" className="btn-secondary" disabled={currentReleasePage >= releasePageCount} onClick={() => setReleasePage((page) => Math.min(releasePageCount, page + 1))} style={{ padding: '7px 12px' }}>Next</button>
+              </div>
+            </div>
+            {releaseItems.length === 0 && <p style={{ color: 'var(--text-muted)' }}>There are no campaigns awaiting release or recorded as released.</p>}
+            {releaseItems.length > 0 && filteredReleaseItems.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No campaigns match this search and filter.</p>}
+            {visibleReleaseItems.map((request) => {
               const id = request._id || request.id;
-              const wallet = request.beneficiaryAddress || request.beneficiaryId?.walletAddress || request.beneficiaryId?.userId?.walletAddress;
+              const wallet = request.wallet;
+              const isReleased = request.isReleased;
               const hasEscrowFunds = Number(request.collectedEth || 0) > 0;
-              const releaseReady = Boolean(wallet) && hasEscrowFunds;
+              const releaseReady = !isReleased && Boolean(wallet) && hasEscrowFunds;
               const collectedInr = Number(request.collectedAmount || 0);
-              const statusLabel = !wallet ? 'Wallet needed' : !hasEscrowFunds ? 'Awaiting donations' : 'Ready to release';
-              const statusColor = !wallet
+              const statusLabel = isReleased ? 'Released' : !wallet ? 'Wallet needed' : !hasEscrowFunds ? 'Awaiting donations' : 'Ready to release';
+              const statusColor = isReleased
+                ? { backgroundColor: '#d1fadf', color: '#027a48' }
+                : !wallet
                 ? { backgroundColor: '#fee4e2', color: '#b42318' }
                 : !hasEscrowFunds
                   ? { backgroundColor: '#fef0c7', color: '#93370d' }
@@ -1678,23 +1744,11 @@ export function AdminDashboard() {
                   <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>RELEASE STATUS</div><span style={{ ...statusColor, display: 'inline-block', borderRadius: 999, padding: '5px 10px', fontWeight: 600, fontSize: '0.8rem' }}>{statusLabel}</span></div>
                 </div>
                 <button onClick={() => handleExecuteRelease(request)} disabled={isReleasing || !releaseReady} className="btn-primary" style={{ width: '100%', padding: '12px', fontSize: '0.95rem' }}>
-                  {isReleasing ? 'Sending escrow funds...' : releaseReady ? 'Release available funds to beneficiary →' : !wallet ? 'Waiting for beneficiary wallet' : 'Waiting for escrow donations'}
+                  {isReleased ? `Released · ₹ ${collectedInr.toLocaleString('en-IN')}` : isReleasing ? 'Sending escrow funds...' : releaseReady ? 'Release available funds to beneficiary →' : !wallet ? 'Waiting for beneficiary wallet' : 'Waiting for escrow donations'}
                 </button>
+                {isReleased && <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', wordBreak: 'break-all', marginTop: 10 }}>Transaction: {request.releaseTxHash}</div>}
               </div>;
             })}
-            <div style={{ maxWidth: '640px', marginTop: 24 }}>
-              <h3 style={{ fontSize: '1rem', marginBottom: 12 }}>Recently Released</h3>
-              {releasedRequests.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>No confirmed releases are recorded yet.</p>}
-              {releasedRequests.map((request) => <div className="bridge-card" key={request._id || request.id} style={{ padding: 18, marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                  <strong>{request.title}</strong><span className="badge-approved">Released</span>
-                </div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 8 }}>
-                  ₹ {Number(request.collectedAmount || 0).toLocaleString('en-IN')} released{request.releasedAt ? ` · ${new Date(request.releasedAt).toLocaleString()}` : ''}
-                </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', wordBreak: 'break-all', marginTop: 6 }}>{request.releaseTxHash}</div>
-              </div>)}
-            </div>
           </div>
 
           {/* SECTION 4: Suspicious Campaign Reports & Democratic Governance Supervision */}
