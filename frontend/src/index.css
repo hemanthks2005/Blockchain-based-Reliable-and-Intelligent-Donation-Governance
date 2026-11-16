@@ -528,3 +528,106 @@ img {
     padding: 16px !important;
   }
 }
+
+/* Keep every route usable on narrow phones, including dashboard panels and dialogs. */
+@media (max-width: 640px) {
+  html,
+  body,
+  #root {
+    min-width: 320px;
+    width: 100%;
+  }
+
+  body {
+    font-size: 0.94rem;
+  }
+
+  .container {
+    padding-inline: 16px;
+  }
+
+  main,
+  section,
+  article,
+  .bridge-card,
+  .bridge-glass-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Inline grids are used throughout the pages; reduce their minimum card width. */
+  [style*="grid-template-columns"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Preserve readable tables while allowing them to scroll inside their own region. */
+  .table-responsive {
+    max-width: calc(100vw - 32px);
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+
+  .table-responsive table {
+    width: max-content !important;
+    min-width: 100%;
+  }
+
+  /* Inputs should not assume an icon is present in every form. */
+  .bridge-input {
+    padding: 12px 14px !important;
+    min-height: 46px;
+  }
+
+  textarea.bridge-input {
+    min-height: 110px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .stat-card-green,
+  .stat-card-blue,
+  .stat-card-rose,
+  .stat-card-amber,
+  .stat-card-purple,
+  .stat-card-cyan {
+    min-width: 0;
+  }
+
+  footer .container,
+  footer .container > div {
+    align-items: flex-start !important;
+  }
+
+  footer .container > div {
+    flex-wrap: wrap;
+    gap: 10px !important;
+  }
+
+  [role="dialog"],
+  [aria-modal="true"] {
+    max-height: calc(100dvh - 24px) !important;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .container {
+    padding-inline: 12px;
+  }
+
+  .table-responsive {
+    max-width: calc(100vw - 24px);
+    margin-inline: -12px;
+    padding-inline: 12px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding-inline: 12px;
+  }
+}
