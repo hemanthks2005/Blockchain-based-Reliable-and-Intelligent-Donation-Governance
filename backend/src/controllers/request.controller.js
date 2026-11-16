@@ -112,15 +112,14 @@ export async function releaseFunds(req, res, next) {
     if (request.isFrozen || request.status === 'UNDER_REVIEW') return res.status(403).json({ success: false, error: { message: 'Campaign is frozen under governance review' } });
 
     const requestId = Number.parseInt(String(req.params.id).slice(-4), 16) || 101;
-    let walletAddress = request.beneficiaryAddress || request.beneficiaryId?.walletAddress;
+    let payoutRecipient = request.beneficiaryAddress || request.beneficiaryId?.userId?.walletAddress;
     let totalEth = Number(request.collectedEth || 0);
     if (mongoose.connection.readyState === 1) {
       const beneficiary = await beneficiaryService.getBeneficiaryById(request.beneficiaryId?._id || request.beneficiaryId);
-      walletAddress = walletAddress || beneficiary?.walletAddress;
       if (beneficiary?.userId) {
         const { User } = await import('../models/User.js');
         const user = await User.findById(beneficiary.userId).select('walletAddress');
-        walletAddress = walletAddress || user?.walletAddress;
+        payoutRecipient = payoutRecipient || user?.walletAddress;
       }
       const donationRequestIds = [req.params.id];
       if (mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -132,16 +131,16 @@ export async function releaseFunds(req, res, next) {
       }).select('amountEth beneficiaryAddress');
       const donationEthTotal = donations.reduce((sum, donation) => sum + Number(donation.amountEth || 0), 0);
       totalEth = Math.max(totalEth, donationEthTotal);
-      walletAddress = walletAddress || donations.find((donation) => donation.beneficiaryAddress)?.beneficiaryAddress;
+      payoutRecipient = donations.find((donation) => donation.beneficiaryAddress)?.beneficiaryAddress || payoutRecipient;
     }
-    if (!walletAddress) return res.status(400).json({ success: false, error: { message: 'Set a beneficiary wallet address before releasing funds' } });
+    if (!payoutRecipient) return res.status(400).json({ success: false, error: { message: 'Could not determine this campaign’s payout recipient. Check the beneficiary account and confirmed donation records.' } });
     if (totalEth <= 0) return res.status(409).json({ success: false, error: { message: 'No confirmed escrow donations are available for this campaign' } });
 
-    const result = await blockchainService.releaseFunds(requestId, walletAddress);
+    const result = await blockchainService.releaseFunds(requestId, payoutRecipient);
     if (result.status !== 'SUCCESS') throw new Error('Blockchain did not confirm the fund transfer');
     const releaseRecord = { ...result, amountEth: totalEth };
     await requestService.markRequestReleased(req.params.id, releaseRecord);
-    res.status(200).json({ success: true, message: 'Funds released successfully', data: { ...releaseRecord, requestId: req.params.id, campaignChainId: requestId, beneficiaryAddress: walletAddress } });
+    res.status(200).json({ success: true, message: 'Funds released successfully', data: { ...releaseRecord, requestId: req.params.id, campaignChainId: requestId } });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: { message: err.message } });
     next(err);

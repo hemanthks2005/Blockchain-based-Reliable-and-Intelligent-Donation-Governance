@@ -208,7 +208,7 @@ export async function getRequests({ role, beneficiaryId, status } = {}) {
     const dbItems = await FundRequest.find(filter)
       .populate({
         path: 'beneficiaryId',
-        select: 'name contactEmail verificationStatus userId walletAddress',
+        select: 'name contactEmail verificationStatus userId',
         populate: { path: 'userId', select: 'walletAddress' },
       })
       .sort({ createdAt: -1 })
@@ -248,7 +248,7 @@ export async function getRequestById(id) {
     try {
       const doc = await FundRequest.findById(id).populate({
         path: 'beneficiaryId',
-        select: 'name contactEmail verificationStatus userId walletAddress',
+        select: 'name contactEmail verificationStatus userId',
         populate: { path: 'userId', select: 'walletAddress' },
       });
       if (doc) return doc;

@@ -323,7 +323,8 @@ class BlockchainService {
 
   async releaseFunds(requestId, beneficiaryAddress) {
     await this.initPromise;
-    if (!ethers.isAddress(beneficiaryAddress)) throw new Error('A valid beneficiary wallet address is required');
+    if (!ethers.isAddress(beneficiaryAddress)) throw new Error('Could not determine a valid payout recipient for this campaign');
+    beneficiaryAddress = ethers.getAddress(beneficiaryAddress);
     const id = Number(requestId);
     if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Invalid campaign release identifier');
 

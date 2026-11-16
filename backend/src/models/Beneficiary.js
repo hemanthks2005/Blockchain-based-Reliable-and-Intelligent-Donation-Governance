@@ -28,15 +28,6 @@ const beneficiarySchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    walletAddress: {
-      type: String,
-      trim: true,
-      default: null,
-      validate: {
-        validator: (value) => !value || /^0x[a-fA-F0-9]{40}$/.test(value),
-        message: 'Enter a valid Ethereum wallet address',
-      },
-    },
     verificationStatus: {
       type: String,
       enum: [

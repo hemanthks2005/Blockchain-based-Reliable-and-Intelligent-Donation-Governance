@@ -213,7 +213,7 @@ export const donationService = {
         if (reqDoc.beneficiaryId) {
           beneficiaryId = reqDoc.beneficiaryId._id || reqDoc.beneficiaryId;
           beneficiaryName = reqDoc.beneficiaryName || reqDoc.beneficiaryId.name || reqDoc.beneficiaryId.organizationName || beneficiaryName;
-          beneficiaryAddress = reqDoc.beneficiaryAddress || reqDoc.beneficiaryId.walletAddress || beneficiaryAddress;
+          beneficiaryAddress = reqDoc.beneficiaryAddress || reqDoc.beneficiaryId.userId?.walletAddress || beneficiaryAddress;
         } else if (reqDoc.beneficiaryName) {
           beneficiaryName = reqDoc.beneficiaryName;
         }

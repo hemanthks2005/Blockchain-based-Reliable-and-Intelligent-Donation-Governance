@@ -711,24 +711,6 @@ export function BeneficiaryDashboard() {
                 />
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>
-                  Beneficiary Wallet Address
-                </label>
-                <input
-                  type="text"
-                  value={profile?.walletAddress || ''}
-                  onChange={(e) => setProfile({ ...profile, walletAddress: e.target.value.trim() })}
-                  className="bridge-input"
-                  placeholder="0x..."
-                  pattern="0x[a-fA-F0-9]{40}"
-                  title="Enter a valid Ethereum wallet address (0x followed by 40 hexadecimal characters)"
-                />
-                <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: 5 }}>
-                  This address receives released campaign funds.
-                </small>
-              </div>
-
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>
                   Mission & Scope
@@ -1082,23 +1064,6 @@ export function BeneficiaryDashboard() {
                   <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.74rem' }}>REQUEST ID</span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-dark)' }}>
                     {selectedCampaignDetails._id || selectedCampaignDetails.id || 'N/A'}
-                  </span>
-                </div>
-                <div>
-                  <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.74rem' }}>
-                    BENEFICIARY WALLET
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontWeight: 600,
-                      color: 'var(--accent-blue)',
-                      wordBreak: 'break-all',
-                    }}
-                  >
-                    {selectedCampaignDetails.beneficiaryAddress ||
-                      profile?.walletAddress ||
-                      '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'}
                   </span>
                 </div>
                 <div>

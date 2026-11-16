@@ -97,7 +97,7 @@ function seedDefaultBeneficiary() {
 
 seedDefaultBeneficiary();
 
-export async function createOrUpdateProfile(userId, { name, description, contactEmail, contactPhone, walletAddress }) {
+export async function createOrUpdateProfile(userId, { name, description, contactEmail, contactPhone }) {
   if (isDbConnected()) {
     let profile = await Beneficiary.findOne({ userId });
     if (profile) {
@@ -105,7 +105,6 @@ export async function createOrUpdateProfile(userId, { name, description, contact
       profile.description = description || profile.description;
       profile.contactEmail = contactEmail || profile.contactEmail;
       profile.contactPhone = contactPhone || profile.contactPhone;
-      if (walletAddress !== undefined) profile.walletAddress = walletAddress?.trim() || null;
       await profile.save();
       return profile;
     }
@@ -116,7 +115,6 @@ export async function createOrUpdateProfile(userId, { name, description, contact
       description,
       contactEmail,
       contactPhone,
-      walletAddress: walletAddress?.trim() || null,
       verificationStatus: 'PENDING_VERIFICATION',
     });
     return profile;
@@ -128,7 +126,6 @@ export async function createOrUpdateProfile(userId, { name, description, contact
         b.description = description || b.description;
         b.contactEmail = contactEmail || b.contactEmail;
         b.contactPhone = contactPhone || b.contactPhone;
-        if (walletAddress !== undefined) b.walletAddress = walletAddress?.trim() || null;
         b.updatedAt = new Date();
         return b;
       }
@@ -142,7 +139,6 @@ export async function createOrUpdateProfile(userId, { name, description, contact
       description,
       contactEmail,
       contactPhone,
-      walletAddress: walletAddress?.trim() || null,
       verificationStatus: 'PENDING_VERIFICATION',
       verificationRemarks: null,
       verifiedBy: null,

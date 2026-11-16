@@ -500,10 +500,9 @@ export function AdminDashboard() {
   const releaseItems = requests
     .filter((request) => (request.status === 'APPROVED' && !request.isFrozen) || (request.status === 'COMPLETED' && request.releaseTxHash))
     .map((request) => {
-      const wallet = request.beneficiaryAddress || request.beneficiaryId?.walletAddress || request.beneficiaryId?.userId?.walletAddress;
       const isReleased = request.status === 'COMPLETED' && Boolean(request.releaseTxHash);
-      const category = isReleased ? 'RELEASED' : !wallet ? 'WALLET_REQUIRED' : Number(request.collectedEth || 0) <= 0 ? 'AWAITING_DONATIONS' : 'READY';
-      return { ...request, wallet, isReleased, releaseCategory: category };
+      const category = isReleased ? 'RELEASED' : Number(request.collectedEth || 0) <= 0 ? 'AWAITING_DONATIONS' : 'READY';
+      return { ...request, isReleased, releaseCategory: category };
     });
   const filteredReleaseItems = releaseItems.filter((request) => {
     if (releaseStatusFilter !== 'ALL' && request.releaseCategory !== releaseStatusFilter) return false;
@@ -513,7 +512,6 @@ export function AdminDashboard() {
       request.title,
       request.beneficiaryName,
       request.beneficiaryId?.name,
-      request.wallet,
       request._id,
       request.id,
     ].filter(Boolean).join(' ').toLowerCase();
@@ -1659,7 +1657,7 @@ export function AdminDashboard() {
             <div className="bridge-card" style={{ maxWidth: 900, padding: 18, marginBottom: 20, color: 'var(--text-muted)', fontSize: '0.88rem', lineHeight: 1.6 }}>
               <strong style={{ color: 'var(--text-dark)' }}>How this screen works</strong>
               <p style={{ margin: '6px 0' }}>The <strong>approved amount</strong> is the campaign’s INR limit. <strong>Donations in escrow</strong> are the funds actually available to transfer.</p>
-              <p style={{ margin: '6px 0' }}><strong>Beneficiary payout wallet</strong> is the NGO’s receiving wallet address. The beneficiary must save it in their Beneficiary Profile before you can release funds.</p>
+              <p style={{ margin: '6px 0' }}>The payout recipient is selected automatically from the campaign’s confirmed donations or beneficiary account. No recipient details need to be entered here.</p>
               <p style={{ margin: '6px 0 0' }}>Campaigns marked “Released” have a confirmed release and show the transaction hash.</p>
             </div>
 
@@ -1688,7 +1686,7 @@ export function AdminDashboard() {
                 type="search"
                 value={releaseSearchQuery}
                 onChange={(event) => { setReleaseSearchQuery(event.target.value); setReleasePage(1); }}
-                placeholder="Search campaign, beneficiary, wallet, or ID"
+                placeholder="Search campaign, beneficiary, or ID"
                 aria-label="Search fund release campaigns"
                 className="bridge-input"
                 style={{ flex: '1 1 300px', minWidth: 220 }}
@@ -1702,7 +1700,6 @@ export function AdminDashboard() {
               >
                 <option value="ALL">All campaign statuses</option>
                 <option value="READY">Ready to release</option>
-                <option value="WALLET_REQUIRED">Wallet needed</option>
                 <option value="AWAITING_DONATIONS">Awaiting donations</option>
                 <option value="RELEASED">Released</option>
               </select>
@@ -1722,29 +1719,25 @@ export function AdminDashboard() {
             {releaseItems.length > 0 && filteredReleaseItems.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No campaigns match this search and filter.</p>}
             {visibleReleaseItems.map((request) => {
               const id = request._id || request.id;
-              const wallet = request.wallet;
               const isReleased = request.isReleased;
               const hasEscrowFunds = Number(request.collectedEth || 0) > 0;
-              const releaseReady = !isReleased && Boolean(wallet) && hasEscrowFunds;
+              const releaseReady = !isReleased && hasEscrowFunds;
               const collectedInr = Number(request.collectedAmount || 0);
-              const statusLabel = isReleased ? 'Released' : !wallet ? 'Wallet needed' : !hasEscrowFunds ? 'Awaiting donations' : 'Ready to release';
+              const statusLabel = isReleased ? 'Released' : !hasEscrowFunds ? 'Awaiting donations' : 'Ready to release';
               const statusColor = isReleased
                 ? { backgroundColor: '#d1fadf', color: '#027a48' }
-                : !wallet
-                ? { backgroundColor: '#fee4e2', color: '#b42318' }
                 : !hasEscrowFunds
                   ? { backgroundColor: '#fef0c7', color: '#93370d' }
                   : { backgroundColor: '#d1fadf', color: '#027a48' };
               return <div className="bridge-card" key={id} style={{ padding: 'clamp(20px, 3vw, 28px)', maxWidth: '640px', marginBottom: 16 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px', fontSize: '0.9rem' }}>
                   <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>CAMPAIGN</div><div style={{ fontWeight: 700, color: 'var(--text-dark)' }}>{request.title}</div></div>
-                  <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>BENEFICIARY PAYOUT WALLET</div><div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: wallet ? 'var(--accent-blue)' : '#b42318', wordBreak: 'break-all' }}>{wallet || 'Not set. Ask the beneficiary to add it in their profile.'}</div></div>
                   <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>APPROVED LIMIT</div><div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary-green)' }}>₹ {Number(request.approvedAmount || 0).toLocaleString('en-IN')}</div></div>
                   <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>DONATED TO ESCROW</div><div style={{ fontWeight: 700, color: 'var(--text-dark)' }}>₹ {collectedInr.toLocaleString('en-IN')}</div></div>
                   <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>RELEASE STATUS</div><span style={{ ...statusColor, display: 'inline-block', borderRadius: 999, padding: '5px 10px', fontWeight: 600, fontSize: '0.8rem' }}>{statusLabel}</span></div>
                 </div>
                 <button onClick={() => handleExecuteRelease(request)} disabled={isReleasing || !releaseReady} className="btn-primary" style={{ width: '100%', padding: '12px', fontSize: '0.95rem' }}>
-                  {isReleased ? `Released · ₹ ${collectedInr.toLocaleString('en-IN')}` : isReleasing ? 'Sending escrow funds...' : releaseReady ? 'Release available funds to beneficiary →' : !wallet ? 'Waiting for beneficiary wallet' : 'Waiting for escrow donations'}
+                  {isReleased ? `Released · ₹ ${collectedInr.toLocaleString('en-IN')}` : isReleasing ? 'Sending escrow funds...' : releaseReady ? 'Release available funds to beneficiary →' : 'Waiting for escrow donations'}
                 </button>
                 {isReleased && <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', wordBreak: 'break-all', marginTop: 10 }}>Transaction: {request.releaseTxHash}</div>}
               </div>;
