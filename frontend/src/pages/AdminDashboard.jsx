@@ -263,7 +263,7 @@ export function AdminDashboard() {
   const [donationFilter, setDonationFilter] = useState('ALL');
 
   const [fundReleaseSuccess, setFundReleaseSuccess] = useState(false);
-  const [isReleasing, setIsReleasing] = useState(false);
+  const [releasingRequestId, setReleasingRequestId] = useState(null);
   const [releaseError, setReleaseError] = useState('');
   const [releaseReceipt, setReleaseReceipt] = useState(null);
   const [releaseSearchQuery, setReleaseSearchQuery] = useState('');
@@ -481,19 +481,20 @@ export function AdminDashboard() {
   };
 
   const handleExecuteRelease = async (request) => {
-    setIsReleasing(true);
+    const requestId = request._id || request.id;
+    setReleasingRequestId(String(requestId));
     setReleaseError('');
     setReleaseReceipt(null);
     setFundReleaseSuccess(false);
     try {
-      const receipt = await adminService.releaseFunds(request._id || request.id);
+      const receipt = await adminService.releaseFunds(requestId);
       setReleaseReceipt(receipt);
       setFundReleaseSuccess(true);
       await loadData();
     } catch (err) {
       setReleaseError(err.message || 'Fund release failed');
     } finally {
-      setIsReleasing(false);
+      setReleasingRequestId(null);
     }
   };
 
@@ -501,8 +502,21 @@ export function AdminDashboard() {
     .filter((request) => (request.status === 'APPROVED' && !request.isFrozen) || (request.status === 'COMPLETED' && request.releaseTxHash))
     .map((request) => {
       const isReleased = request.status === 'COMPLETED' && Boolean(request.releaseTxHash);
-      const category = isReleased ? 'RELEASED' : Number(request.collectedEth || 0) <= 0 ? 'AWAITING_DONATIONS' : 'READY';
-      return { ...request, isReleased, releaseCategory: category };
+      const requestId = String(request._id || request.id || '');
+      const confirmedDonations = donations.filter((donation) => {
+        const donationRequestId = String(donation.requestId?._id || donation.requestId?.id || donation.requestId || '');
+        return donationRequestId === requestId && ['CONFIRMED', 'ALLOCATED', 'COMPLETED'].includes(donation.status);
+      });
+      const collectedEth = Math.max(
+        Number(request.collectedEth || 0),
+        confirmedDonations.reduce((sum, donation) => sum + Number(donation.amountEth || 0), 0)
+      );
+      const collectedAmount = Math.max(
+        Number(request.collectedAmount || 0),
+        confirmedDonations.reduce((sum, donation) => sum + Number(donation.amount || 0), 0)
+      );
+      const category = isReleased ? 'RELEASED' : collectedEth <= 0 ? 'AWAITING_DONATIONS' : 'READY';
+      return { ...request, collectedEth, collectedAmount, isReleased, releaseCategory: category };
     });
   const filteredReleaseItems = releaseItems.filter((request) => {
     if (releaseStatusFilter !== 'ALL' && request.releaseCategory !== releaseStatusFilter) return false;
@@ -1719,6 +1733,7 @@ export function AdminDashboard() {
             {releaseItems.length > 0 && filteredReleaseItems.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No campaigns match this search and filter.</p>}
             {visibleReleaseItems.map((request) => {
               const id = request._id || request.id;
+              const isThisReleasing = releasingRequestId === String(id);
               const isReleased = request.isReleased;
               const hasEscrowFunds = Number(request.collectedEth || 0) > 0;
               const releaseReady = !isReleased && hasEscrowFunds;
@@ -1736,8 +1751,8 @@ export function AdminDashboard() {
                   <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>DONATED TO ESCROW</div><div style={{ fontWeight: 700, color: 'var(--text-dark)' }}>₹ {collectedInr.toLocaleString('en-IN')}</div></div>
                   <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>RELEASE STATUS</div><span style={{ ...statusColor, display: 'inline-block', borderRadius: 999, padding: '5px 10px', fontWeight: 600, fontSize: '0.8rem' }}>{statusLabel}</span></div>
                 </div>
-                <button onClick={() => handleExecuteRelease(request)} disabled={isReleasing || !releaseReady} className="btn-primary" style={{ width: '100%', padding: '12px', fontSize: '0.95rem' }}>
-                  {isReleased ? `Released · ₹ ${collectedInr.toLocaleString('en-IN')}` : isReleasing ? 'Sending escrow funds...' : releaseReady ? 'Release available funds to beneficiary →' : 'Waiting for escrow donations'}
+                <button onClick={() => handleExecuteRelease(request)} disabled={releasingRequestId !== null || !releaseReady} className="btn-primary" style={{ width: '100%', padding: '12px', fontSize: '0.95rem' }}>
+                  {isReleased ? `Released · ₹ ${collectedInr.toLocaleString('en-IN')}` : isThisReleasing ? 'Sending escrow funds...' : releaseReady ? 'Release available funds to beneficiary →' : 'Waiting for escrow donations'}
                 </button>
                 {isReleased && <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', wordBreak: 'break-all', marginTop: 10 }}>Transaction: {request.releaseTxHash}</div>}
               </div>;

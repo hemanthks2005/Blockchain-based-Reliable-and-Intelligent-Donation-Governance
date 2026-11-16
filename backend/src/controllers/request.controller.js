@@ -1,7 +1,8 @@
 import * as requestService from '../services/request.service.js';
 import * as beneficiaryService from '../services/beneficiary.service.js';
+import { donationService } from '../services/donation.service.js';
 import { blockchainService } from '../services/blockchain.service.js';
-import { Donation } from '../models/Donation.js';
+import { ethers } from 'ethers';
 import mongoose from 'mongoose';
 
 export async function create(req, res, next) {
@@ -112,28 +113,30 @@ export async function releaseFunds(req, res, next) {
     if (request.isFrozen || request.status === 'UNDER_REVIEW') return res.status(403).json({ success: false, error: { message: 'Campaign is frozen under governance review' } });
 
     const requestId = Number.parseInt(String(req.params.id).slice(-4), 16) || 101;
-    let payoutRecipient = request.beneficiaryAddress || request.beneficiaryId?.userId?.walletAddress;
+    const payoutCandidates = [
+      request.beneficiaryAddress,
+      request.beneficiaryId?.userId?.walletAddress,
+    ];
     let totalEth = Number(request.collectedEth || 0);
+    const donations = await donationService.getDonationsForCampaign(req.params.id);
+    const confirmedDonations = donations.filter((donation) => ['CONFIRMED', 'ALLOCATED', 'COMPLETED'].includes(donation.status));
+    const donationEthTotal = confirmedDonations.reduce((sum, donation) => sum + Number(donation.amountEth || 0), 0);
+    totalEth = Math.max(totalEth, donationEthTotal);
+    payoutCandidates.push(...confirmedDonations.map((donation) => donation.beneficiaryAddress));
+
     if (mongoose.connection.readyState === 1) {
       const beneficiary = await beneficiaryService.getBeneficiaryById(request.beneficiaryId?._id || request.beneficiaryId);
       if (beneficiary?.userId) {
         const { User } = await import('../models/User.js');
         const user = await User.findById(beneficiary.userId).select('walletAddress');
-        payoutRecipient = payoutRecipient || user?.walletAddress;
+        payoutCandidates.push(user?.walletAddress);
       }
-      const donationRequestIds = [req.params.id];
-      if (mongoose.Types.ObjectId.isValid(req.params.id)) {
-        donationRequestIds.push(new mongoose.Types.ObjectId(req.params.id));
-      }
-      const donations = await Donation.find({
-        requestId: { $in: donationRequestIds },
-        status: { $in: ['CONFIRMED', 'ALLOCATED', 'COMPLETED'] },
-      }).select('amountEth beneficiaryAddress');
-      const donationEthTotal = donations.reduce((sum, donation) => sum + Number(donation.amountEth || 0), 0);
-      totalEth = Math.max(totalEth, donationEthTotal);
-      payoutRecipient = donations.find((donation) => donation.beneficiaryAddress)?.beneficiaryAddress || payoutRecipient;
     }
-    if (!payoutRecipient) return res.status(400).json({ success: false, error: { message: 'Could not determine this campaign’s payout recipient. Check the beneficiary account and confirmed donation records.' } });
+    const payoutRecipient = payoutCandidates
+      .filter((candidate) => typeof candidate === 'string')
+      .map((candidate) => candidate.trim())
+      .find((candidate) => ethers.isAddress(candidate));
+    if (!payoutRecipient) return res.status(400).json({ success: false, error: { message: 'No valid payout destination is linked to this campaign. Add a valid address to the beneficiary account or donation record.' } });
     if (totalEth <= 0) return res.status(409).json({ success: false, error: { message: 'No confirmed escrow donations are available for this campaign' } });
 
     const result = await blockchainService.releaseFunds(requestId, payoutRecipient);

@@ -578,7 +578,11 @@ export const donationService = {
    */
   async getDonationsForCampaign(requestId) {
     if (isDbConnected()) {
-      return await Donation.find({ requestId });
+      const requestIds = [requestId.toString()];
+      if (mongoose.Types.ObjectId.isValid(requestId)) {
+        requestIds.push(new mongoose.Types.ObjectId(requestId));
+      }
+      return await Donation.find({ requestId: { $in: requestIds } });
     } else {
       seedDefaultDonations();
       return Array.from(inMemoryDonations.values()).filter(
