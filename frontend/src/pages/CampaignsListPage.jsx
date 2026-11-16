@@ -189,7 +189,7 @@ export function CampaignsListPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <div className="campaign-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   {camp.isFrozen ? (
                     <button
                       disabled

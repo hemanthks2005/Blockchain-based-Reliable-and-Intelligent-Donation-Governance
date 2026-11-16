@@ -228,7 +228,7 @@ export function DonationModal({ isOpen, onClose, campaign, onDonateSuccess }) {
       onClick={handleReset}
     >
       <div
-        className="bridge-card"
+        className="bridge-card donation-modal-panel"
         style={{
           width: '100%',
           maxWidth: '480px',
@@ -343,7 +343,7 @@ export function DonationModal({ isOpen, onClose, campaign, onDonateSuccess }) {
               </div>
 
               {/* Quick Select Preset Buttons */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', marginTop: '10px' }}>
+              <div className="donation-amount-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', marginTop: '10px' }}>
                 {['500', '1000', '2500', '5000', '10000'].map((val) => (
                   <button
                     key={val}

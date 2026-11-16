@@ -228,7 +228,7 @@ export function RegisterPage() {
                 <label className="bridge-label">
                   Select Your Account Role <span style={{ color: 'var(--accent-rose)' }}>*</span>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                <div className="role-choice-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
                   {[
                     { id: ROLES.DONOR, label: 'Donor', icon: '💖' },
                     { id: ROLES.BENEFICIARY, label: 'Beneficiary', icon: '🤝' },

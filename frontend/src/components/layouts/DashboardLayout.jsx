@@ -233,11 +233,12 @@ export function DashboardLayout({ children, activeTab: propActiveTab }) {
         </header>
 
         {/* Dashboard Body */}
-        <main style={{ flex: 1, padding: 'clamp(16px, 3vw, 36px)', overflowY: 'auto' }}>
+        <main className="dashboard-main" style={{ flex: 1, padding: 'clamp(16px, 3vw, 36px)', overflowY: 'auto' }}>
           
           {/* Top Welcome Card */}
           <div
             className="bridge-card"
+            data-dashboard-welcome="true"
             style={{
               padding: '16px 20px',
               marginBottom: '24px',

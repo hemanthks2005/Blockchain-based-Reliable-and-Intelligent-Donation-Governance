@@ -155,6 +155,7 @@ export function CampaignDetailsPage() {
 
             {/* 3 Metric Pills */}
             <div
+              className="campaign-metrics"
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
