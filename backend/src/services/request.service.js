@@ -188,10 +188,16 @@ export async function createRequest(beneficiaryId, { title, description, purpose
 }
 
 export async function getRequests({ role, beneficiaryId, status } = {}) {
+  if (role === 'BENEFICIARY' && !beneficiaryId) {
+    return [];
+  }
+
   if (isDbConnected()) {
     let filter = {};
     if (role === 'BENEFICIARY' && beneficiaryId) {
-      filter.beneficiaryId = beneficiaryId;
+      filter.beneficiaryId = {
+        $in: [beneficiaryId, beneficiaryId.toString()],
+      };
     }
     if (status && status !== 'ALL') {
       filter.status = status;
@@ -210,6 +216,12 @@ export async function getRequests({ role, beneficiaryId, status } = {}) {
       }
     }
     return dbItems;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    const err = new Error('Funding requests are temporarily unavailable because the database connection is down. Please try again shortly.');
+    err.statusCode = 503;
+    throw err;
   }
 
   // Resilient In-Memory Fallback
