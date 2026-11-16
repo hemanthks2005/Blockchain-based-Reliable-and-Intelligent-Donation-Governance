@@ -47,6 +47,9 @@ const fundRequestSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    releaseTxHash: { type: String, default: null },
+    releasedAt: { type: Date, default: null },
+    releasedAmountEth: { type: Number, default: 0, min: 0 },
     status: {
       type: String,
       enum: [

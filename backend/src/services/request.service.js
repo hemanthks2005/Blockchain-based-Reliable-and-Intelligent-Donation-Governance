@@ -206,7 +206,11 @@ export async function getRequests({ role, beneficiaryId, status } = {}) {
       filter.status = 'APPROVED';
     }
     const dbItems = await FundRequest.find(filter)
-      .populate('beneficiaryId', 'name contactEmail verificationStatus')
+      .populate({
+        path: 'beneficiaryId',
+        select: 'name contactEmail verificationStatus userId',
+        populate: { path: 'userId', select: 'walletAddress' },
+      })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -242,7 +246,11 @@ export async function getRequests({ role, beneficiaryId, status } = {}) {
 export async function getRequestById(id) {
   if (isDbConnected()) {
     try {
-      const doc = await FundRequest.findById(id).populate('beneficiaryId', 'name contactEmail verificationStatus');
+      const doc = await FundRequest.findById(id).populate({
+        path: 'beneficiaryId',
+        select: 'name contactEmail verificationStatus userId',
+        populate: { path: 'userId', select: 'walletAddress' },
+      });
       if (doc) return doc;
     } catch (_e) {}
   }
@@ -298,6 +306,9 @@ export async function markRequestReleased(id, release) {
     const doc = await FundRequest.findById(id);
     if (!doc) { const err = new Error('Fund request not found'); err.statusCode = 404; throw err; }
     doc.status = 'COMPLETED';
+    doc.releaseTxHash = release.txHash;
+    doc.releasedAt = new Date();
+    doc.releasedAmountEth = Number(release.amountEth || 0);
     doc.reviewRemarks = `${doc.reviewRemarks || ''}${doc.reviewRemarks ? ' | ' : ''}Funds released on-chain: ${release.txHash}`;
     await doc.save();
     return doc;
@@ -306,6 +317,9 @@ export async function markRequestReleased(id, release) {
   const doc = inMemoryRequests.get(id.toString());
   if (!doc) { const err = new Error('Fund request not found'); err.statusCode = 404; throw err; }
   doc.status = 'COMPLETED';
+  doc.releaseTxHash = release.txHash;
+  doc.releasedAt = new Date();
+  doc.releasedAmountEth = Number(release.amountEth || 0);
   doc.reviewRemarks = `${doc.reviewRemarks || ''}${doc.reviewRemarks ? ' | ' : ''}Funds released: ${release.txHash}`;
   doc.updatedAt = new Date();
   return doc;

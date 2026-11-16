@@ -131,8 +131,9 @@ export async function releaseFunds(req, res, next) {
 
     const result = await blockchainService.releaseFunds(requestId, walletAddress);
     if (result.status !== 'SUCCESS') throw new Error('Blockchain did not confirm the fund transfer');
-    await requestService.markRequestReleased(req.params.id, result);
-    res.status(200).json({ success: true, message: 'Funds released successfully', data: { ...result, requestId: req.params.id, campaignChainId: requestId, beneficiaryAddress: walletAddress, amountEth: totalEth } });
+    const releaseRecord = { ...result, amountEth: totalEth };
+    await requestService.markRequestReleased(req.params.id, releaseRecord);
+    res.status(200).json({ success: true, message: 'Funds released successfully', data: { ...releaseRecord, requestId: req.params.id, campaignChainId: requestId, beneficiaryAddress: walletAddress } });
   } catch (err) {
     if (err.statusCode) return res.status(err.statusCode).json({ success: false, error: { message: err.message } });
     next(err);

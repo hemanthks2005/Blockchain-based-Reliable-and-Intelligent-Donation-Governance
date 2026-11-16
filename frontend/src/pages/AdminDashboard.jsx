@@ -495,6 +495,7 @@ export function AdminDashboard() {
   };
 
   const releasableRequests = requests.filter((request) => request.status === 'APPROVED' && !request.isFrozen);
+  const releasedRequests = requests.filter((request) => request.status === 'COMPLETED' && request.releaseTxHash);
 
   const pendingRequestsCount = requests.filter((r) => r.status === 'PENDING').length;
   const visibleRequests = requestFilter === 'ALL'
@@ -1649,22 +1650,36 @@ export function AdminDashboard() {
               </div>
             )}
             {releaseError && <div role="alert" style={{ color: '#b42318', marginBottom: 16 }}>{releaseError}</div>}
-            {releasableRequests.length === 0 && <p style={{ color: 'var(--text-muted)' }}>There are no approved campaigns ready for fund release.</p>}
+            {releasableRequests.length === 0 && <p style={{ color: 'var(--text-muted)' }}>There are no approved campaigns awaiting release.</p>}
             {releasableRequests.map((request) => {
               const id = request._id || request.id;
-              const wallet = request.beneficiaryAddress || request.beneficiaryId?.walletAddress || 'Wallet not configured';
+              const wallet = request.beneficiaryAddress || request.beneficiaryId?.walletAddress || request.beneficiaryId?.userId?.walletAddress;
+              const hasEscrowFunds = Number(request.collectedEth || 0) > 0;
+              const releaseReady = Boolean(wallet) && hasEscrowFunds;
               return <div className="bridge-card" key={id} style={{ padding: 'clamp(20px, 3vw, 28px)', maxWidth: '640px', marginBottom: 16 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '20px', fontSize: '0.9rem' }}>
                   <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>CAMPAIGN</div><div style={{ fontWeight: 700, color: 'var(--text-dark)' }}>{request.title}</div></div>
-                  <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>BENEFICIARY WALLET</div><div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--accent-blue)', wordBreak: 'break-all' }}>{wallet}</div></div>
+                  <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>BENEFICIARY WALLET</div><div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--accent-blue)', wordBreak: 'break-all' }}>{wallet || 'Wallet not configured'}</div></div>
                   <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>APPROVED AMOUNT</div><div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary-green)' }}>₹ {Number(request.approvedAmount || 0).toLocaleString('en-IN')}</div></div>
-                  <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>ESCROW STATUS</div><span className="badge-approved">Ready for Release</span></div>
+                  <div><div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>ESCROW STATUS</div><span className="badge-approved">{releaseReady ? 'Funds Available' : wallet ? 'Awaiting Donations' : 'Wallet Required'}</span></div>
                 </div>
-                <button onClick={() => handleExecuteRelease(request)} disabled={isReleasing || wallet === 'Wallet not configured'} className="btn-primary" style={{ width: '100%', padding: '12px', fontSize: '0.95rem' }}>
+                <button onClick={() => handleExecuteRelease(request)} disabled={isReleasing || !releaseReady} className="btn-primary" style={{ width: '100%', padding: '12px', fontSize: '0.95rem' }}>
                   {isReleasing ? 'Executing Release via Smart Contract...' : 'Release Funds to Beneficiary →'}
                 </button>
               </div>;
             })}
+            {releasedRequests.length > 0 && <div style={{ maxWidth: '640px', marginTop: 24 }}>
+              <h3 style={{ fontSize: '1rem', marginBottom: 12 }}>Recently Released</h3>
+              {releasedRequests.map((request) => <div className="bridge-card" key={request._id || request.id} style={{ padding: 18, marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                  <strong>{request.title}</strong><span className="badge-approved">Released</span>
+                </div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 8 }}>
+                  {request.releasedAmountEth ? `${request.releasedAmountEth} ETH · ` : ''}{request.releasedAt ? new Date(request.releasedAt).toLocaleString() : ''}
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', wordBreak: 'break-all', marginTop: 6 }}>{request.releaseTxHash}</div>
+              </div>)}
+            </div>}
           </div>
 
           {/* SECTION 4: Suspicious Campaign Reports & Democratic Governance Supervision */}
