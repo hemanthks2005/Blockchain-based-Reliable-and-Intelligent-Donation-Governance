@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import { FundRequest } from '../models/FundRequest.js';
-import { logger } from '../utils/logger.js';
 
 const inMemoryRequests = new Map();
 
@@ -174,20 +173,16 @@ export async function createRequest(beneficiaryId, { title, description, purpose
   let createdDoc = null;
 
   if (isDbConnected()) {
-    try {
-      createdDoc = await FundRequest.create({
-        beneficiaryId,
-        beneficiaryName,
-        title,
-        description: finalDescription,
-        purpose: finalPurpose,
-        requestedAmount: Number(requestedAmount),
-        status: 'PENDING',
-      });
-      await createdDoc.populate('beneficiaryId', 'name contactEmail verificationStatus');
-    } catch (err) {
-      logger.warn(`Could not save FundRequest to DB: ${err.message}`);
-    }
+    createdDoc = await FundRequest.create({
+      beneficiaryId,
+      beneficiaryName,
+      title,
+      description: finalDescription,
+      purpose: finalPurpose,
+      requestedAmount: Number(requestedAmount),
+      status: 'PENDING',
+    });
+    await createdDoc.populate('beneficiaryId', 'name contactEmail verificationStatus');
   }
 
   const inMemReq = {
@@ -214,36 +209,28 @@ export async function createRequest(beneficiaryId, { title, description, purpose
 }
 
 export async function getRequests({ role, beneficiaryId, status } = {}) {
-  let dbItems = null;
-
   if (isDbConnected()) {
-    try {
-      let filter = {};
-      if (role === 'BENEFICIARY' && beneficiaryId) {
-        filter.beneficiaryId = beneficiaryId;
-      }
-      if (status && status !== 'ALL') {
-        filter.status = status;
-      } else if (role === 'DONOR' && !status) {
-        // Donors see approved requests by default
-        filter.status = 'APPROVED';
-      }
-      dbItems = await FundRequest.find(filter)
-        .populate('beneficiaryId', 'name contactEmail verificationStatus')
-        .sort({ createdAt: -1 })
-        .lean();
-
-      if (Array.isArray(dbItems)) {
-        for (const item of dbItems) {
-          if (!item.beneficiaryName && item.beneficiaryId?.name) {
-            item.beneficiaryName = item.beneficiaryId.name;
-          }
-        }
-        return dbItems;
-      }
-    } catch (err) {
-      logger.warn(`Error loading FundRequests from DB: ${err.message}`);
+    let filter = {};
+    if (role === 'BENEFICIARY' && beneficiaryId) {
+      filter.beneficiaryId = beneficiaryId;
     }
+    if (status && status !== 'ALL') {
+      filter.status = status;
+    } else if (role === 'DONOR' && !status) {
+      // Donors see approved requests by default
+      filter.status = 'APPROVED';
+    }
+    const dbItems = await FundRequest.find(filter)
+      .populate('beneficiaryId', 'name contactEmail verificationStatus')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    for (const item of dbItems) {
+      if (!item.beneficiaryName && item.beneficiaryId?.name) {
+        item.beneficiaryName = item.beneficiaryId.name;
+      }
+    }
+    return dbItems;
   }
 
   // Resilient In-Memory Fallback
