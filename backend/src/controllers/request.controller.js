@@ -122,8 +122,16 @@ export async function releaseFunds(req, res, next) {
         const user = await User.findById(beneficiary.userId).select('walletAddress');
         walletAddress = walletAddress || user?.walletAddress;
       }
-      const donations = await Donation.find({ requestId: req.params.id, status: { $in: ['CONFIRMED', 'ALLOCATED'] } }).select('amountEth beneficiaryAddress');
-      totalEth = donations.reduce((sum, donation) => sum + Number(donation.amountEth || 0), 0);
+      const donationRequestIds = [req.params.id];
+      if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+        donationRequestIds.push(new mongoose.Types.ObjectId(req.params.id));
+      }
+      const donations = await Donation.find({
+        requestId: { $in: donationRequestIds },
+        status: { $in: ['CONFIRMED', 'ALLOCATED', 'COMPLETED'] },
+      }).select('amountEth beneficiaryAddress');
+      const donationEthTotal = donations.reduce((sum, donation) => sum + Number(donation.amountEth || 0), 0);
+      totalEth = Math.max(totalEth, donationEthTotal);
       walletAddress = walletAddress || donations.find((donation) => donation.beneficiaryAddress)?.beneficiaryAddress;
     }
     if (!walletAddress) return res.status(400).json({ success: false, error: { message: 'Set a beneficiary wallet address before releasing funds' } });

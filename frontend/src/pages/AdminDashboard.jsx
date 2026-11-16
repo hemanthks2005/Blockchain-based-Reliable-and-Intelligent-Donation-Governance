@@ -1853,12 +1853,15 @@ export function AdminDashboard() {
                       </tr>
                     ) : (
                       disputes.map((disp, idx) => {
+                        const campaignId = typeof disp.campaignId === 'object'
+                          ? disp.campaignId?._id || disp.campaignId?.id
+                          : disp.campaignId;
                         const totalWeight = (disp.approveWeight || 0) + (disp.rejectWeight || 0);
                         const appPct = totalWeight > 0 ? Math.round(((disp.approveWeight || 0) / totalWeight) * 100) : 50;
-                        const isExpanded = expandedDisputeId === disp.campaignId;
+                        const isExpanded = expandedDisputeId === campaignId;
 
                         return (
-                          <React.Fragment key={disp.campaignId || disp._id || idx}>
+                          <React.Fragment key={campaignId || disp._id || idx}>
                             <tr
                               style={{
                                 borderBottom: '1px solid var(--border-light)',
@@ -1933,7 +1936,7 @@ export function AdminDashboard() {
                               <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                                 <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                                   <button
-                                    onClick={() => setExpandedDisputeId(isExpanded ? null : disp.campaignId)}
+                                    onClick={() => setExpandedDisputeId(isExpanded ? null : campaignId)}
                                     className="btn-secondary"
                                     style={{ padding: '4px 8px', fontSize: '0.74rem', borderRadius: '4px' }}
                                   >
@@ -1942,12 +1945,12 @@ export function AdminDashboard() {
 
                                   {disp.status !== 'RESOLVED_APPROVED' && disp.status !== 'RESOLVED_REJECTED' && (
                                     <button
-                                      onClick={() => handleAdminFinalizeDispute(disp.campaignId, disp.campaignTitle)}
-                                      disabled={finalizingCampaignId === disp.campaignId}
+                                      onClick={() => handleAdminFinalizeDispute(campaignId, disp.campaignTitle)}
+                                      disabled={finalizingCampaignId === campaignId}
                                       className="btn-primary"
                                       style={{ padding: '4px 10px', fontSize: '0.74rem', borderRadius: '4px', backgroundColor: '#4338ca' }}
                                     >
-                                      {finalizingCampaignId === disp.campaignId ? 'Tallying...' : '⚡ Finalize'}
+                                      {finalizingCampaignId === campaignId ? 'Tallying...' : '⚡ Finalize'}
                                     </button>
                                   )}
                                 </div>
@@ -1959,7 +1962,7 @@ export function AdminDashboard() {
                               <tr style={{ backgroundColor: '#f8fafc' }}>
                                 <td colSpan="7" style={{ padding: '16px 20px' }}>
                                   <GovernanceDisputeCard
-                                    campaignId={disp.campaignId}
+                                    campaignId={campaignId}
                                     initialDispute={disp}
                                     onFinalized={() => {
                                       loadData();
