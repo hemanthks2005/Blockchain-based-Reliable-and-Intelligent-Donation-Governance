@@ -10,6 +10,7 @@ export function BeneficiaryDashboard() {
   const [profile, setProfile] = useState(null);
   const [requests, setRequests] = useState([]);
   const requestMutationVersion = useRef(0);
+  const [requestLoadError, setRequestLoadError] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [transactionLoadError, setTransactionLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -78,6 +79,9 @@ export function BeneficiaryDashboard() {
           ? reqsData.data
           : (reqsData.data?.requests || []);
         setRequests(safeReqs);
+        setRequestLoadError(false);
+      } else if (reqsData.error && requestVersionAtStart === requestMutationVersion.current) {
+        setRequestLoadError(true);
       }
       if (transactionData.error) {
         setTransactionLoadError(true);
@@ -110,6 +114,7 @@ export function BeneficiaryDashboard() {
       const created = await govService.createFundRequest(payload);
       requestMutationVersion.current += 1;
       setRequests((prev) => [created, ...prev]);
+      setRequestLoadError(false);
       setShowCreateModal(false);
       setNewRequest({ title: '', purpose: '', description: '', requestedAmount: '' });
       setFeedbackMsg('Funding request created successfully and queued for Admin review!');
@@ -322,7 +327,17 @@ export function BeneficiaryDashboard() {
               </tr>
             </thead>
             <tbody>
-              {requests.map((r, idx) => (
+              {requests.length === 0 ? (
+                <tr>
+                  <td colSpan="5" role="status" style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    {loading
+                      ? 'Loading funding requests…'
+                      : requestLoadError
+                      ? 'Funding requests could not be loaded. Please refresh to try again.'
+                      : 'No funding requests found for this account yet.'}
+                  </td>
+                </tr>
+              ) : requests.map((r, idx) => (
                 <tr
                   key={r._id || r.id || idx}
                   style={{
@@ -465,6 +480,10 @@ export function BeneficiaryDashboard() {
               </tbody>
             </table>
           </div>
+        ) : requestLoadError ? (
+          <p role="status" style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '12px 0 22px' }}>
+            Funding request statuses could not be loaded. Please refresh to try again.
+          </p>
         ) : (
           <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '12px 0 22px' }}>
             No funding requests have been submitted yet.
