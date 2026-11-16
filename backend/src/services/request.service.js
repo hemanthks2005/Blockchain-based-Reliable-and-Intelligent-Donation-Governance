@@ -158,6 +158,12 @@ export async function createRequest(beneficiaryId, { title, description, purpose
   const finalPurpose = purpose || title;
   const finalDescription = description || finalPurpose;
 
+  if (!isDbConnected()) {
+    const err = new Error('Database is unavailable. The fund request was not saved; please try again once the service reconnects.');
+    err.statusCode = 503;
+    throw err;
+  }
+
   // Resolve beneficiary name
   let beneficiaryName = 'NGO Hope';
   if (isDbConnected()) {
@@ -168,44 +174,17 @@ export async function createRequest(beneficiaryId, { title, description, purpose
     } catch (_e) {}
   }
 
-  seedDefaultRequests();
-  const newId = new mongoose.Types.ObjectId().toString();
-  let createdDoc = null;
-
-  if (isDbConnected()) {
-    createdDoc = await FundRequest.create({
-      beneficiaryId,
-      beneficiaryName,
-      title,
-      description: finalDescription,
-      purpose: finalPurpose,
-      requestedAmount: Number(requestedAmount),
-      status: 'PENDING',
-    });
-    await createdDoc.populate('beneficiaryId', 'name contactEmail verificationStatus');
-  }
-
-  const inMemReq = {
-    _id: createdDoc ? createdDoc._id.toString() : newId,
-    id: createdDoc ? createdDoc._id.toString() : newId,
-    beneficiaryId: beneficiaryId.toString(),
+  const createdDoc = await FundRequest.create({
+    beneficiaryId,
     beneficiaryName,
     title,
     description: finalDescription,
     purpose: finalPurpose,
     requestedAmount: Number(requestedAmount),
-    approvedAmount: 0,
-    collectedAmount: 0,
     status: 'PENDING',
-    reviewedBy: null,
-    reviewRemarks: null,
-    reviewedAt: null,
-    createdAt: createdDoc ? createdDoc.createdAt : new Date(),
-    updatedAt: createdDoc ? createdDoc.updatedAt : new Date(),
-  };
-  inMemoryRequests.set(inMemReq._id, inMemReq);
-
-  return createdDoc || inMemReq;
+  });
+  await createdDoc.populate('beneficiaryId', 'name contactEmail verificationStatus');
+  return createdDoc;
 }
 
 export async function getRequests({ role, beneficiaryId, status } = {}) {
