@@ -711,6 +711,24 @@ export function BeneficiaryDashboard() {
                 />
               </div>
 
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>
+                  Beneficiary Wallet Address
+                </label>
+                <input
+                  type="text"
+                  value={profile?.walletAddress || ''}
+                  onChange={(e) => setProfile({ ...profile, walletAddress: e.target.value.trim() })}
+                  className="bridge-input"
+                  placeholder="0x..."
+                  pattern="0x[a-fA-F0-9]{40}"
+                  title="Enter a valid Ethereum wallet address (0x followed by 40 hexadecimal characters)"
+                />
+                <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: 5 }}>
+                  This address receives released campaign funds.
+                </small>
+              </div>
+
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>
                   Mission & Scope

@@ -2,12 +2,16 @@ import * as beneficiaryService from '../services/beneficiary.service.js';
 
 export async function createProfile(req, res, next) {
   try {
-    const { name, description, contactEmail, contactPhone } = req.body;
+    const { name, description, contactEmail, contactPhone, walletAddress } = req.body;
+    if (walletAddress && !/^0x[a-fA-F0-9]{40}$/.test(walletAddress.trim())) {
+      return res.status(400).json({ success: false, error: { message: 'Enter a valid Ethereum wallet address (0x followed by 40 hexadecimal characters).' } });
+    }
     const profile = await beneficiaryService.createOrUpdateProfile(req.user.id, {
       name,
       description,
       contactEmail,
       contactPhone,
+      walletAddress,
     });
 
     res.status(201).json({
